@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="primefaces"
+      xmlns:ui="jakarta.faces.facelets">
+
+<ui:composition template="/template.xhtml">
+    <ui:define name="pageTitle">My Payroll</ui:define>
+    <ui:define name="content">
+		
+        <h:form id="myPayrollForm">
+            <p:growl id="growl" life="4000" showDetail="false" />
+
+            <div class="section-card" style="margin-bottom:20px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+                    <h3 style="margin:0;">
+                        <span class="pi pi-wallet" style="margin-right:8px;" />My Payroll
+                    </h3>
+                </div>
+            </div>
+
+            <div class="section-card">
+                <p:dataTable value="#{myPayrollBean.myPayrollList}" var="pr" emptyMessage="No payroll records found" stripedRows="true" styleClass="hrms-table"
+                 paginator="true" rows="10" paginatorPosition="bottom" paginatorTemplate="{FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}">
+                    <p:column headerText="Period" style="width:140px">
+                        <h:outputText value="#{myPayrollBean.getMonthName(pr.month)} #{pr.year}" />
+                    </p:column>
+                    <p:column headerText="Monthly Salary" style="width:130px">
+                        <h:outputText value="#{pr.monthlySalary}">
+                            <f:convertNumber pattern="#,##0.00" />
+                        </h:outputText>
+                    </p:column>
+                    <p:column headerText="Present" style="width:75px">
+                        <h:outputText value="#{pr.presentDays}" />
+                    </p:column>
+                    <p:column headerText="Absent" style="width:75px">
+                        <h:outputText value="#{pr.absentDays}" />
+                    </p:column>
+                    <p:column headerText="Half Days" style="width:85px">
+                        <h:outputText value="#{pr.halfDays}" />
+                    </p:column>
+                    <p:column headerText="Deduction" style="width:110px">
+                        <h:outputText value="#{pr.deductionAmount}">
+                            <f:convertNumber pattern="#,##0.00" />
+                        </h:outputText>
+                    </p:column>
+                    <p:column headerText="Net Salary" style="width:120px">
+                        <h:outputText value="#{pr.netSalary}">
+                            <f:convertNumber pattern="#,##0.00" />
+                        </h:outputText>
+                    </p:column>
+                    <p:column headerText="Status" style="width:100px">
+                        <span class="emp-badge #{pr.isPaid ? 'badge-active' : 'badge-inactive'}">
+                            #{pr.isPaid ? 'Paid' : 'Unpaid'}
+                        </span>
+                    </p:column>
+                </p:dataTable>
+            </div>
+        </h:form>
+
+    </ui:define>
+</ui:composition>
+</html>

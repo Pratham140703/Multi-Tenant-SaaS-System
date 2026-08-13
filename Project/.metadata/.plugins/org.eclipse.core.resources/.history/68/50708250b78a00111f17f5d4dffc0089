@@ -1,0 +1,211 @@
+package com.saas.hrms.service;
+
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.saas.hrms.dto.AttendanceResponse;
+import com.saas.hrms.dto.AttendanceSummaryResponse;
+import com.saas.hrms.dto.ManualAttendanceRequest;
+import com.saas.hrms.entity.Attendance;
+import com.saas.hrms.entity.Company;
+import com.saas.hrms.entity.Employee;
+import com.saas.hrms.enums.AttendanceStatus;
+import com.saas.hrms.exception.BadRequestException;
+import com.saas.hrms.repository.AttendanceRepository;
+import com.saas.hrms.repository.CompanyRepository;
+import com.saas.hrms.repository.EmployeeRepository;
+import com.saas.hrms.util.TenantContext;
+
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
+public class AttendanceService {
+
+	private final AttendanceRepository attendanceRepository;
+	private final EmployeeRepository employeeRepository;
+	private final CompanyRepository companyRepository;
+
+	@Transactional
+	public AttendanceResponse checkIn(String email) {
+		Long companyId = TenantContext.getTenantId();
+		Employee employee = employeeRepository.findByEmailAndCompanyId(email, companyId).orElse(null);
+		if (employee == null) {
+			throw new BadRequestException("Employee record not found");
+		}
+		LocalDate today = LocalDate.now();
+		boolean alreadyCheckedIn = attendanceRepository.findByEmployeeIdAndAttendanceDate(employee.getId(), today).isPresent();
+		if (alreadyCheckedIn) {
+			throw new BadRequestException("You have already checked in today");
+		}
+		Company company = companyRepository.findById(companyId).orElse(null);
+		if (company == null) {
+			throw new BadRequestException("Company not found");
+		}
+		Attendance attendance = Attendance.builder().employee(employee).company(company).attendanceDate(today)
+				.checkInTime(LocalDateTime.now()).status(AttendanceStatus.PRESENT).markedByHr(false).build();
+
+		Attendance saved = attendanceRepository.save(attendance);
+		return mapToResponse(saved);
+	}
+
+	@Transactional
+	public AttendanceResponse checkOut(String email) {
+		Long companyId = TenantContext.getTenantId();
+		Employee employee = employeeRepository.findByEmailAndCompanyId(email, companyId).orElse(null);
+		if (employee == null) {
+			throw new BadRequestException("Employee record not found");
+		}
+		LocalDate today = LocalDate.now();
+		Attendance attendance = attendanceRepository.findByEmployeeIdAndAttendanceDate(employee.getId(), today).orElse(null);
+		if (attendance == null) {
+			throw new BadRequestException("You have not checked in today");
+		}
+		if (attendance.getCheckOutTime() != null) {
+			throw new BadRequestException("You have already checked out today");
+		}
+		LocalDateTime now = LocalDateTime.now();
+		attendance.setCheckOutTime(now);
+		attendance.setWorkingHours(calculateHours(attendance.getCheckInTime(), now));
+
+		Attendance saved = attendanceRepository.save(attendance);
+		return mapToResponse(saved);
+	}
+
+	@Transactional
+	public AttendanceResponse markManualAttendance(ManualAttendanceRequest request) {
+		Long companyId = TenantContext.getTenantId();
+		Employee employee = employeeRepository.findByIdAndCompanyId(request.getEmployeeId(), companyId).orElse(null);
+		if (employee == null) {
+			throw new BadRequestException("Employee not found");
+		}
+		AttendanceStatus status = parseStatus(request.getStatus());
+		Attendance attendance = attendanceRepository.findByEmployeeIdAndAttendanceDate(employee.getId(), request.getAttendanceDate()).orElse(null);
+		if (attendance == null) {
+			Company company = companyRepository.findById(companyId).orElse(null);
+			if (company == null) {
+				throw new BadRequestException("Company not found");
+			}
+			attendance = Attendance.builder().employee(employee).company(company)
+					.attendanceDate(request.getAttendanceDate()).status(status).markedByHr(true).build();
+		} else {
+			attendance.setStatus(status);
+			attendance.setMarkedByHr(true);
+		}
+
+		Attendance saved = attendanceRepository.save(attendance);
+		return mapToResponse(saved);
+	}
+
+	public List<AttendanceResponse> getMyAttendance(String email, LocalDate from, LocalDate to) {
+		Long companyId = TenantContext.getTenantId();
+		Employee employee = employeeRepository.findByEmailAndCompanyId(email, companyId).orElse(null);
+		if (employee == null) {
+			throw new BadRequestException("Employee not found");
+		}
+		List<Attendance> records = attendanceRepository.findByEmployeeIdAndAttendanceDateBetween(employee.getId(), from, to);
+		List<AttendanceResponse> responses = new ArrayList<>();
+		for (Attendance record : records) {
+			responses.add(mapToResponse(record));
+		}
+		return responses;
+	}
+
+	public List<AttendanceResponse> getDailyAttendance(LocalDate date) {
+		Long companyId = TenantContext.getTenantId();
+		List<Attendance> records = attendanceRepository.findByCompanyIdAndAttendanceDate(companyId, date);
+		List<AttendanceResponse> responses = new ArrayList<>();
+		for (Attendance record : records) {
+			responses.add(mapToResponse(record));
+		}
+		return responses;
+	}
+
+	public List<AttendanceResponse> getCompanyAttendance(LocalDate from, LocalDate to) {
+		Long companyId = TenantContext.getTenantId();
+		List<Attendance> records = attendanceRepository.findByCompanyIdAndAttendanceDateBetween(companyId, from, to);
+		List<AttendanceResponse> responses = new ArrayList<>();
+		for (Attendance record : records) {
+			responses.add(mapToResponse(record));
+		}
+		return responses;
+	}
+
+	private Double calculateHours(LocalDateTime checkIn, LocalDateTime checkOut) {
+		long minutes = Duration.between(checkIn, checkOut).toMinutes();
+		double hours = minutes / 60.0;
+		double rounded = Math.round(hours * 100.0) / 100.0;
+		return rounded;
+	}
+
+	private AttendanceStatus parseStatus(String status) {
+		AttendanceStatus result;
+		try {
+			result = AttendanceStatus.valueOf(status.toUpperCase());
+		} catch (IllegalArgumentException e) {
+			throw new BadRequestException("Invalid status. Use PRESENT, ABSENT, HALF_DAY, or ON_LEAVE");
+		}
+		return result;
+	}
+
+	private AttendanceResponse mapToResponse(Attendance a) {
+		String fullName = a.getEmployee().getFirstName() + " " + a.getEmployee().getLastName();
+
+		return AttendanceResponse.builder().id(a.getId()).employeeName(fullName)
+				.employeeCode(a.getEmployee().getEmployeeCode()).attendanceDate(a.getAttendanceDate())
+				.checkInTime(a.getCheckInTime()).checkOutTime(a.getCheckOutTime()).status(a.getStatus().name())
+				.workingHours(a.getWorkingHours()).markedByHr(a.getMarkedByHr()).build();
+	}
+
+	public AttendanceSummaryResponse getMonthlySummary(Long employeeId, LocalDate from, LocalDate to,String requesterEmail, boolean isHr) {
+		Long companyId = TenantContext.getTenantId();
+		Employee employee = employeeRepository.findByIdAndCompanyId(employeeId, companyId).orElse(null);
+		if (employee == null) {
+			throw new BadRequestException("Employee not found");
+		}
+		
+		boolean isOwnRecord = employee.getEmail().equalsIgnoreCase(requesterEmail);
+		if (!isHr && !isOwnRecord) {
+			throw new BadRequestException("You are not allowed to view this employee's attendance summary");
+		}
+		List<Attendance> records = attendanceRepository.findByEmployeeIdAndAttendanceDateBetween(employeeId, from, to);
+
+		long present = 0;
+		long absent = 0;
+		long halfDay = 0;
+		long onLeave = 0;
+		double totalHours = 0.0;
+
+		for (Attendance record : records) {
+			AttendanceStatus status = record.getStatus();
+
+			if (status == AttendanceStatus.PRESENT) {
+				present++;
+			} 
+			else if (status == AttendanceStatus.ABSENT) {
+				absent++;
+			}
+			else if (status == AttendanceStatus.HALF_DAY) {
+				halfDay++;
+			} 
+			else if (status == AttendanceStatus.ON_LEAVE) {
+				onLeave++;
+			}
+			if (record.getWorkingHours() != null) {
+				totalHours += record.getWorkingHours();
+			}
+		}
+		double roundedTotalHours = Math.round(totalHours * 100.0) / 100.0;
+		
+		return AttendanceSummaryResponse.builder().employeeName(employee.getFirstName() + " " + employee.getLastName())
+				.employeeCode(employee.getEmployeeCode()).presentDays(present).absentDays(absent).halfDays(halfDay)
+				.onLeaveDays(onLeave).totalWorkingHours(roundedTotalHours).build();
+	}
+
+}

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="primefaces"
+      xmlns:ui="jakarta.faces.facelets">
+
+<ui:composition template="/template.xhtml">
+    <ui:define name="pageTitle">Departments</ui:define>
+    <ui:define name="content">
+		
+        <h:form id="deptForm">
+            <p:growl id="growl" life="4000" showDetail="false" />
+            <div class="section-card" style="margin-bottom:20px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+                    <h3 style="margin:0;"><span class="pi pi-sitemap" style="margin-right:8px;" />Department List</h3>
+                    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                        <p:inputText value="#{departmentBean.searchQuery}" placeholder="Search departments..." styleClass="p-inputtext" style="width:240px" />
+                        <p:commandButton value="Search" icon="pi pi-search" styleClass="p-button-sm" action="#{departmentBean.search}" update="deptForm" process="@form" />
+                        <p:commandButton value="Clear" icon="pi pi-times" styleClass="p-button-sm p-button-outlined" action="#{departmentBean.clearSearch}" update="deptForm" />
+					    <p:commandButton value="Add Department" icon="pi pi-plus" styleClass="p-button-sm" action="#{departmentBean.openAddDialog}"
+						 update="deptForm:deptDialog" oncomplete="PF('deptDialogWidget').show()" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-card">
+                <p:dataTable id="deptTable" value="#{departmentBean.displayList}" var="dept" emptyMessage="No departments found" stripedRows="true"
+                 styleClass="hrms-table" paginator="true" rows="10" paginatorPosition="bottom" paginatorTemplate="{FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}">
+                    <p:column headerText="Department Name">
+                        <h:outputText value="#{dept.name}" />
+                    </p:column>
+                    <p:column headerText="Description">
+                        <h:outputText value="#{dept.description != null ? dept.description : '—'}" />
+                    </p:column>
+                    <p:column headerText="Status" style="width:110px">
+                        <span class="emp-badge #{dept.isActive ? 'badge-active' : 'badge-inactive'}"> #{dept.isActive ? 'ACTIVE' : 'INACTIVE'}
+                        </span>
+                    </p:column>
+                    <p:column headerText="Actions" style="width:120px">
+                        <div style="display:flex; gap:6px;">
+							<p:commandButton icon="pi pi-pencil" title="Edit" styleClass="p-button-sm p-button-outlined p-button-info" action="#{departmentBean.openEditDialog(dept)}"
+							 update="deptForm:deptDialog" process="@this" oncomplete="PF('deptDialogWidget').show()" />
+                            <p:commandButton icon="pi pi-ban" title="Deactivate" styleClass="p-button-sm p-button-outlined p-button-danger"
+                             rendered="#{dept.isActive}" action="#{departmentBean.deactivate(dept.id)}" update="deptForm" process="@this">
+                                <p:confirm header="Confirm Deactivate" message="Deactivate department '#{dept.name}'?" icon="pi pi-exclamation-triangle" />
+                            </p:commandButton>
+                        </div>
+                    </p:column>
+                </p:dataTable>
+            </div>
+
+            <p:dialog id="deptDialog" header="#{departmentBean.editMode ? 'Edit Department' : 'Add Department'}" widgetVar="deptDialogWidget" modal="true"
+             resizable="false" width="460" styleClass="hrms-dialog">
+                <div class="dialog-body">
+                    <div class="form-field" style="margin-bottom:16px;">
+                        <label>Department Name <span class="required">*</span></label>
+                        <p:inputText value="#{departmentBean.name}" styleClass="p-inputtext form-control" placeholder="e.g. Engineering" />
+                    </div>
+                    <div class="form-field" style="margin-bottom:20px;">
+                        <label>Description</label>
+                        <p:inputTextarea value="#{departmentBean.description}" styleClass="p-inputtext form-control" placeholder="Optional description..."
+                         rows="3" autoResize="false" />
+                    </div>
+                    <div style="display:flex; gap:10px; justify-content:flex-end;">
+						<p:commandButton value="Save" icon="pi pi-check" styleClass="p-button-sm" action="#{departmentBean.save}" update="deptForm"
+						 process="deptForm:deptDialog" oncomplete="if(!args.validationFailed) PF('deptDialogWidget').hide()" />
+                        <p:commandButton value="Cancel" icon="pi pi-times" styleClass="p-button-sm p-button-outlined" onclick="PF('deptDialogWidget').hide()" type="button" />
+                    </div>
+                </div>
+            </p:dialog>
+
+            <p:confirmDialog global="true" showEffect="fade" hideEffect="fade">
+                <p:commandButton value="Yes" type="button" styleClass="p-button-danger p-button-sm ui-confirmdialog-yes" />
+                <p:commandButton value="No" type="button" styleClass="p-button-outlined p-button-sm ui-confirmdialog-no" />
+            </p:confirmDialog>
+        </h:form>
+
+    </ui:define>
+</ui:composition>
+</html>

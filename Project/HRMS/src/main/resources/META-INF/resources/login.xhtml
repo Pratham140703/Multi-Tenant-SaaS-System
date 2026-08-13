@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="primefaces">
+
+<h:head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HRMS - Login</title>
+	<style>
+	    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+	    body {
+	        font-family: 'Segoe UI', sans-serif;
+	        background: #f1f5f9;
+	        min-height: 100vh;
+	        display: flex;
+	        align-items: center;
+	        justify-content: center;
+	    }
+
+	    .login-wrapper { width: 100%; max-width: 420px; padding: 20px; }
+
+	    .login-card {
+	        background: #fff;
+	        border-radius: 16px;
+	        border: 1px solid #e2e8f0;
+	        padding: 40px 36px;
+	        box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+	    }
+
+	    .login-logo { text-align: center; margin-bottom: 28px; }
+
+	    .logo-box {
+	        width: 52px; height: 52px;
+	        background: #6366f1;
+	        border-radius: 12px;
+	        display: inline-flex;
+	        align-items: center; justify-content: center;
+	        font-size: 1.5rem; color: #fff;
+	        margin-bottom: 14px;
+	    }
+
+	    .login-logo h1 { font-size: 1.1rem; font-weight: 700; color: #1e293b; margin-bottom: 4px; }
+	    .login-logo p  { font-size: 0.84rem; color: #64748b; }
+
+	    .login-divider { border: none; border-top: 1px solid #f1f5f9; margin: 0 0 24px; }
+
+	    .field { margin-bottom: 16px; }
+
+	    .field label {
+	        display: block;
+	        font-size: 0.8rem; font-weight: 600;
+	        color: #475569; margin-bottom: 6px;
+	    }
+
+	    .field-wrap { position: relative; }
+	    .field-icon {
+	        position: absolute; left: 11px; top: 50%;
+	        transform: translateY(-50%);
+	        color: #94a3b8; font-size: 1rem;
+	        pointer-events: none;
+	    }
+
+	    .field .p-inputtext,
+	    .field .p-password input {
+	        width: 100% !important;
+	        padding: 10px 12px 10px 36px !important;
+	        border: 1.5px solid #e2e8f0 !important;
+	        border-radius: 8px !important;
+	        font-size: 0.88rem !important;
+	        color: #1e293b !important;
+	        background: #f8fafc !important;
+	    }
+
+	    .field .p-inputtext:focus,
+	    .field .p-password input:focus {
+	        border-color: #6366f1 !important;
+	        background: #fff !important;
+	        outline: none;
+	    }
+
+	    .field .p-password { width: 100%; display: block; }
+
+	    .forgot-link {
+	        display: block; text-align: right;
+	        font-size: 0.78rem; color: #6366f1;
+	        text-decoration: none; margin-top: -4px; margin-bottom: 20px;
+	    }
+
+	    .login-btn {
+	        width: 100%;
+	        padding: 11px !important;
+	        font-size: 0.92rem !important;
+	        font-weight: 600 !important;
+	        border-radius: 8px !important;
+	        background: #6366f1 !important;
+	        border-color: #6366f1 !important;
+	        justify-content: center;
+	    }
+
+	    .login-btn:hover { background: #4f46e5 !important; border-color: #4f46e5 !important; }
+
+	    .login-footer { text-align: center; margin-top: 20px; font-size: 0.74rem; color: #94a3b8; }
+		
+		span.ui-password.ui-inputwrapper.ui-input-icon-right {
+		        width: 100% !important;
+		        display: block !important;
+		        box-sizing: border-box !important;
+		    }
+	</style>
+</h:head>
+
+<h:body>
+  <div class="login-wrapper">
+    <div class="login-card">
+
+      <div class="login-logo">
+        <div class="logo-box"><i class="pi pi-building" /></div>
+        <h1>Sign in to your account</h1>
+        <p>Use your work email and password</p>
+      </div>
+
+      <hr class="login-divider" />
+
+      <p:growl id="growl" life="5000" showDetail="false" />
+
+      <h:form id="loginForm">
+        <div class="field">
+          <label>Work email</label>
+          <div class="field-wrap">
+            <i class="pi pi-envelope field-icon" />
+            <p:inputText value="#{loginBean.loginRequest.email}" placeholder="you@company.com" styleClass="p-inputtext" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Password</label>
+          <div class="field-wrap">
+            <i class="pi pi-lock field-icon" />
+            <p:password value="#{loginBean.loginRequest.password}" placeholder="••••••••" feedback="false" toggleMask="true" style="width:100%;"/>
+          </div>
+        </div>
+
+        <a href="#" class="forgot-link">Forgot password?</a>
+
+        <p:commandButton value="Sign in" icon="pi pi-sign-in" styleClass="login-btn" action="#{loginBean.login}" ajax="false" process="@form" update="growl" />
+      </h:form>
+
+      <p class="login-footer">© 2026 HRMS. All rights reserved.</p>
+    </div>
+  </div>
+</h:body>
+</html>

@@ -1,0 +1,95 @@
+package com.saas.hrms.bean;
+
+import com.saas.hrms.dto.GeneratePayrollRequest;
+import com.saas.hrms.dto.PayrollResponse;
+import com.saas.hrms.exception.BadRequestException;
+import com.saas.hrms.service.PayrollService;
+import jakarta.annotation.PostConstruct;
+import jakarta.faces.application.FacesMessage;
+import jakarta.faces.context.FacesContext;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import org.springframework.stereotype.Component;
+import org.springframework.web.context.annotation.RequestScope;
+
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+
+@Component
+@RequestScope
+@RequiredArgsConstructor
+@Getter
+@Setter
+public class PayrollManagementBean {
+
+    private final PayrollService payrollService;
+    private List<PayrollResponse> payrollList = new ArrayList<>();
+    private Integer filterMonth;
+    private Integer filterYear;
+    private Integer genMonth;
+    private Integer genYear;
+
+    @PostConstruct
+    public void init() {
+        filterMonth = LocalDate.now().getMonthValue();
+        filterYear  = LocalDate.now().getYear();
+        loadPayroll();
+    }
+
+    public String getMonthName(int month) {
+        String[] names = {"January","February","March","April","May","June","July","August","September","October","November","December"};
+        if (month < 1 || month > 12) return String.valueOf(month);
+        return names[month - 1];
+    }
+
+    public void loadPayroll() {
+        try {
+            payrollList = payrollService.getCompanyPayroll(filterMonth, filterYear);
+        } catch (BadRequestException e) {
+            addError(e.getMessage());
+        }
+    }
+
+    public void openGenerateDialog() {
+        genMonth = LocalDate.now().getMonthValue();
+        genYear  = LocalDate.now().getYear();
+    }
+
+    public void generatePayroll() {
+        if (genMonth == null || genMonth < 1 || genMonth > 12) {
+            addError("Month must be between 1 and 12");
+            return;
+        }
+        if (genYear == null) {
+            addError("Year is required");
+            return;
+        }
+        GeneratePayrollRequest request = new GeneratePayrollRequest(genMonth, genYear);
+        try {
+            List<PayrollResponse> results = payrollService.generatePayroll(request);
+            FacesContext.getCurrentInstance().addMessage("growl", new FacesMessage(FacesMessage.SEVERITY_INFO,"Payroll generated for " + results.size() + " employee(s)", null));
+            filterMonth = genMonth;
+            filterYear = genYear;
+            loadPayroll();
+        } catch (BadRequestException e) {
+            addError(e.getMessage());
+        }
+    }
+
+    public void markAsPaid(Long payrollId) {
+        try {
+            payrollService.markAsPaid(payrollId);
+            FacesContext.getCurrentInstance().addMessage("growl", new FacesMessage(FacesMessage.SEVERITY_INFO, "Payroll marked as paid", null));
+            loadPayroll();
+        } catch (BadRequestException e) {
+            addError(e.getMessage());
+        }
+    }
+
+    private void addError(String msg) {
+        FacesContext.getCurrentInstance().addMessage("growl", new FacesMessage(FacesMessage.SEVERITY_ERROR, msg, null));
+    }
+    
+}

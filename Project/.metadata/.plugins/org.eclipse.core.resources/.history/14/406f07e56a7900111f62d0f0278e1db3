@@ -1,0 +1,141 @@
+package com.saas.hrms.service;
+
+import com.saas.hrms.dto.EmployeeRequest;
+import com.saas.hrms.dto.EmployeeResponse;
+import com.saas.hrms.entity.Company;
+import com.saas.hrms.entity.Department;
+import com.saas.hrms.entity.Employee;
+import com.saas.hrms.exception.BadRequestException;
+import com.saas.hrms.repository.CompanyRepository;
+import com.saas.hrms.repository.DepartmentRepository;
+import com.saas.hrms.repository.EmployeeRepository;
+import com.saas.hrms.util.TenantContext;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class EmployeeService {
+
+    private final EmployeeRepository employeeRepository;
+    private final CompanyRepository companyRepository;
+    private final DepartmentRepository departmentRepository;
+
+    // Add new employee
+    public EmployeeResponse addEmployee(EmployeeRequest request) {
+        Long companyId = TenantContext.getTenantId();
+        Company company = companyRepository.findById(companyId).orElseThrow(() -> new BadRequestException("Company not found"));
+        Department department = departmentRepository.findByIdAndCompanyId(request.getDepartmentId(), companyId).orElseThrow(() -> new BadRequestException("Department not found"));
+
+        if (employeeRepository.existsByEmail(request.getEmail())) {
+            throw new BadRequestException("Employee with this email already exists");
+        }
+
+        // Auto-generate employee code e.g. TC-2026-001
+        long count = employeeRepository.countByCompanyId(companyId);
+        String employeeCode = generateEmployeeCode(company.getName(), count + 1);
+
+        // Handle optional reporting manager
+        Employee reportingManager = null;
+        if (request.getReportingManagerId() != null) {
+            reportingManager = employeeRepository
+                    .findByIdAndCompanyId(request.getReportingManagerId(), companyId)
+                    .orElseThrow(() -> new BadRequestException("Reporting manager not found in your company"));
+        }
+
+        Employee employee = Employee.builder()
+                .employeeCode(employeeCode)
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .email(request.getEmail())
+                .phone(request.getPhone())
+                .department(department)
+                .designation(request.getDesignation())
+                .joiningDate(request.getJoiningDate())
+                .monthlySalary(request.getMonthlySalary())
+                .status(com.saas.hrms.enums.EmployeeStatus.ACTIVE)
+                .company(company)
+                .reportingManager(reportingManager)
+                .build();
+
+        Employee saved = employeeRepository.save(employee);
+        return mapToResponse(saved);
+    }
+
+    // Get all employees for current tenant
+    public List<EmployeeResponse> getAllEmployees() {
+        Long companyId = TenantContext.getTenantId();
+        return employeeRepository.findByCompanyId(companyId)
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    // Get single employee by ID
+    public EmployeeResponse getEmployeeById(Long id) {
+        Long companyId = TenantContext.getTenantId();
+        Employee employee = employeeRepository.findByIdAndCompanyId(id, companyId).orElseThrow(() -> new BadRequestException("Employee not found"));
+        return mapToResponse(employee);
+    }
+
+    // Update employee
+    public EmployeeResponse updateEmployee(Long id, EmployeeRequest request) {
+        Long companyId = TenantContext.getTenantId();
+        Employee employee = employeeRepository.findByIdAndCompanyId(id, companyId).orElseThrow(() -> new BadRequestException("Employee not found"));
+        Department department = departmentRepository.findByIdAndCompanyId(request.getDepartmentId(), companyId).orElseThrow(() -> new BadRequestException("Department not found"));
+
+        employee.setFirstName(request.getFirstName());
+        employee.setLastName(request.getLastName());
+        employee.setPhone(request.getPhone());
+        employee.setDepartment(department);
+        employee.setDesignation(request.getDesignation());
+        employee.setJoiningDate(request.getJoiningDate());
+        employee.setMonthlySalary(request.getMonthlySalary());
+
+        Employee updated = employeeRepository.save(employee);
+        return mapToResponse(updated);
+    }
+
+    // Deactivate employee
+    public String deactivateEmployee(Long id) {
+        Long companyId = TenantContext.getTenantId();
+        Employee employee = employeeRepository.findByIdAndCompanyId(id, companyId).orElseThrow(() -> new BadRequestException("Employee not found"));
+        employee.setStatus(com.saas.hrms.enums.EmployeeStatus.INACTIVE);
+        employeeRepository.save(employee);
+        return "Employee deactivated successfully";
+    }
+
+    // Convert Entity → Response DTO
+    private EmployeeResponse mapToResponse(Employee employee) {
+        return EmployeeResponse.builder()
+                .id(employee.getId())
+                .employeeCode(employee.getEmployeeCode())
+                .firstName(employee.getFirstName())
+                .lastName(employee.getLastName())
+                .email(employee.getEmail())
+                .phone(employee.getPhone())
+                .departmentName(employee.getDepartment() != null ? employee.getDepartment().getName() : null)
+                .designation(employee.getDesignation())
+                .joiningDate(employee.getJoiningDate())
+                .monthlySalary(employee.getMonthlySalary())
+                .status(employee.getStatus().name())
+                .reportingManagerName(
+                    employee.getReportingManager() != null
+                        ? employee.getReportingManager().getFirstName()
+                          + " " + employee.getReportingManager().getLastName()
+                        : null
+                )
+                .build();
+    }
+
+    // Auto-generate employee code
+    private String generateEmployeeCode(String companyName, long count) {
+        String prefix = companyName.length() >= 2 ? companyName.substring(0, 2).toUpperCase() : companyName.toUpperCase();
+        int year = java.time.LocalDate.now().getYear();
+        return String.format("%s-%d-%03d", prefix, year, count);
+        // Result: TC-2026-001, TC-2026-002, etc.
+    }
+}

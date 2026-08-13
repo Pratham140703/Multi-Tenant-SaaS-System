@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="primefaces"
+      xmlns:ui="jakarta.faces.facelets">
+
+<ui:composition template="/template.xhtml">
+    <ui:define name="pageTitle">My Dashboard</ui:define>
+    <ui:define name="content">
+
+        <h:form id="myDashboardForm">
+            <p:growl id="growl" life="4000" showDetail="false" />
+            <div class="section-card" style="margin-bottom:20px;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <span class="pi pi-home" style="font-size:1.4rem; color:#6366f1;" />
+                    <div>
+                        <h3 style="margin:0;">
+                            Welcome, #{myDashboardBean.dashboard != null ? myDashboardBean.dashboard.employeeName : ''}
+                        </h3>
+                        <small style="color:#888;">
+                            #{myDashboardBean.dashboard != null ? myDashboardBean.dashboard.employeeCode : ''}
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats-grid" style="margin-bottom:20px;">
+                <div class="stat-card blue">
+                    <div class="stat-icon-wrap">
+                        <span class="pi pi-clock" />
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value">
+                            <h:outputText value="#{myDashboardBean.dashboard != null ? myDashboardBean.dashboard.attendancePercentageThisMonth : 0}">
+                                <f:convertNumber maxFractionDigits="1" />
+                            </h:outputText>%
+                        </span>
+                        <span class="stat-label">
+                            Attendance
+                            (#{myDashboardBean.dashboard != null ?
+                                myDashboardBean.getMonthName(myDashboardBean.dashboard.attendanceMonth) : ''}
+                             #{myDashboardBean.dashboard != null ? myDashboardBean.dashboard.attendanceYear : ''})
+                        </span>
+                    </div>
+                </div>
+
+                <div class="stat-card green">
+                    <div class="stat-icon-wrap">
+                        <span class="pi pi-wallet" />
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value">
+                            <h:outputText rendered="#{myDashboardBean.dashboard != null and myDashboardBean.dashboard.lastPayslip != null}">
+                                &#8377;<h:outputText value="#{myDashboardBean.dashboard.lastPayslip.netSalary}">
+                                    <f:convertNumber pattern="#,##0.00" />
+                                </h:outputText>
+                            </h:outputText>
+                            <h:outputText value="—" rendered="#{myDashboardBean.dashboard == null or myDashboardBean.dashboard.lastPayslip == null}" />
+                        </span>
+                        <span class="stat-label">
+                            Last Payslip
+                            <h:outputText rendered="#{myDashboardBean.dashboard != null and myDashboardBean.dashboard.lastPayslip != null}"
+                             value=" (#{myDashboardBean.getMonthName(myDashboardBean.dashboard.lastPayslip.month)} #{myDashboardBean.dashboard.lastPayslip.year})" />
+                        </span>
+                    </div>
+                </div>
+
+                <div class="stat-card orange">
+                    <div class="stat-icon-wrap">
+                        <span class="pi pi-calendar" />
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value">
+                            #{myDashboardBean.dashboard != null ? myDashboardBean.dashboard.leaveBalances.size() : 0}
+                        </span>
+                        <span class="stat-label">Leave Types Allocated</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="section-card" style="margin-bottom:20px;">
+                <h3 style="margin-top:0;">
+                    <span class="pi pi-wallet" style="margin-right:8px;" />Leave Balance
+                </h3>
+                <p:dataTable value="#{myDashboardBean.dashboard != null ? myDashboardBean.dashboard.leaveBalances : null}" var="bal"
+                 emptyMessage="No leave balance allocated yet. Contact HR." stripedRows="true" styleClass="hrms-table">
+                    <p:column headerText="Leave Type">
+                        <h:outputText value="#{bal.leaveTypeName}" />
+                    </p:column>
+                    <p:column headerText="Year" style="width:90px">
+                        <h:outputText value="#{bal.year}" />
+                    </p:column>
+                    <p:column headerText="Total Days" style="width:110px">
+                        <h:outputText value="#{bal.totalDays}" />
+                    </p:column>
+                    <p:column headerText="Used" style="width:90px">
+                        <h:outputText value="#{bal.usedDays}" />
+                    </p:column>
+                    <p:column headerText="Remaining" style="width:110px">
+                        <h:outputText value="#{bal.remainingDays}" />
+                    </p:column>
+                </p:dataTable>
+            </div>
+
+            <div class="section-card" style="margin-bottom:20px;">
+                <h3 style="margin-top:0;">
+                    <span class="pi pi-money-bill" style="margin-right:8px;" />Last Payslip
+                </h3>
+                <h:panelGroup rendered="#{myDashboardBean.dashboard == null or myDashboardBean.dashboard.lastPayslip == null}">
+                    <p style="color:#888; margin:0;">No payslip generated yet.</p>
+                </h:panelGroup>
+                <h:panelGroup rendered="#{myDashboardBean.dashboard != null and myDashboardBean.dashboard.lastPayslip != null}">
+                    <div class="form-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                        <div>
+                            <label style="color:#888; font-size:0.85rem;">Period</label>
+                            <p style="margin:4px 0 0; font-weight:600;">
+                                #{myDashboardBean.getMonthName(myDashboardBean.dashboard.lastPayslip.month)}
+                                #{myDashboardBean.dashboard.lastPayslip.year}
+                            </p>
+                        </div>
+                        <div>
+                            <label style="color:#888; font-size:0.85rem;">Monthly Salary</label>
+                            <p style="margin:4px 0 0; font-weight:600;">
+                                &#8377;<h:outputText value="#{myDashboardBean.dashboard.lastPayslip.monthlySalary}">
+                                    <f:convertNumber pattern="#,##0.00" />
+                                </h:outputText>
+                            </p>
+                        </div>
+                        <div>
+                            <label style="color:#888; font-size:0.85rem;">Present Days</label>
+                            <p style="margin:4px 0 0;">#{myDashboardBean.dashboard.lastPayslip.presentDays}</p>
+                        </div>
+                        <div>
+                            <label style="color:#888; font-size:0.85rem;">Absent Days</label>
+                            <p style="margin:4px 0 0;">#{myDashboardBean.dashboard.lastPayslip.absentDays}</p>
+                        </div>
+                        <div>
+                            <label style="color:#888; font-size:0.85rem;">Half Days</label>
+                            <p style="margin:4px 0 0;">#{myDashboardBean.dashboard.lastPayslip.halfDays}</p>
+                        </div>
+                        <div>
+                            <label style="color:#888; font-size:0.85rem;">Deduction</label>
+                            <p style="margin:4px 0 0; color:#e74c3c;">
+                                - &#8377;<h:outputText value="#{myDashboardBean.dashboard.lastPayslip.deductionAmount}">
+                                    <f:convertNumber pattern="#,##0.00" />
+                                </h:outputText>
+                            </p>
+                        </div>
+                        <div>
+                            <label style="color:#888; font-size:0.85rem;">Net Salary</label>
+                            <p style="margin:4px 0 0; font-weight:700; color:#27ae60; font-size:1.1rem;">
+                                &#8377;<h:outputText value="#{myDashboardBean.dashboard.lastPayslip.netSalary}">
+                                    <f:convertNumber pattern="#,##0.00" />
+                                </h:outputText>
+                            </p>
+                        </div>
+                        <div>
+                            <label style="color:#888; font-size:0.85rem;">Status</label>
+                            <p style="margin:4px 0 0;">
+                                <span class="emp-badge #{myDashboardBean.dashboard.lastPayslip.isPaid ? 'badge-active' : 'badge-inactive'}">
+                                    #{myDashboardBean.dashboard.lastPayslip.isPaid ? 'Paid' : 'Unpaid'}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                </h:panelGroup>
+            </div>
+
+            <div class="section-card">
+                <h3 style="margin-top:0;">
+                    <span class="pi pi-bolt" style="margin-right:8px;" />Quick Actions
+                </h3>
+                <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                    <p:commandButton value="Apply Leave" icon="pi pi-calendar-plus" styleClass="p-button-sm p-button-outlined" ajax="false" action="/leave/my-leave?faces-redirect=true" />
+                    <p:commandButton value="My Attendance" icon="pi pi-clock" styleClass="p-button-sm p-button-outlined" ajax="false"  action="/attendance/my-attendance?faces-redirect=true" />
+                    <p:commandButton value="My Payroll" icon="pi pi-wallet" styleClass="p-button-sm p-button-outlined" ajax="false" action="/payroll/my-payroll?faces-redirect=true" />
+                </div>
+            </div>
+        </h:form>
+
+    </ui:define>
+</ui:composition>
+</html>

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="primefaces"
+      xmlns:ui="jakarta.faces.facelets">
+
+<ui:composition template="/template.xhtml">
+    <ui:define name="pageTitle">Edit Employee</ui:define>
+    <ui:define name="content">
+
+        <f:metadata>
+            <f:viewParam name="employeeId" value="#{employeeFormBean.employeeId}" />
+            <f:event type="preRenderView" listener="#{employeeFormBean.loadEmployee}" />
+        </f:metadata>
+
+        <h:form id="editForm">
+            <p:growl id="growl" life="5000" showDetail="false" />
+			<h:inputHidden value="#{employeeFormBean.employeeId}" />
+            <div class="section-card" style="max-width:780px;">
+				
+                <h3 style="margin-bottom:22px;">
+                    <span class="pi pi-pencil" style="margin-right:8px;" />Edit Employee
+                </h3>
+
+                <div class="form-grid">
+                    <div class="form-field">
+                        <label>First Name <span class="required">*</span></label>
+                        <p:inputText value="#{employeeFormBean.firstName}" styleClass="p-inputtext form-control" placeholder="John" />
+                    </div>
+                    <div class="form-field">
+                        <label>Last Name <span class="required">*</span></label>
+                        <p:inputText value="#{employeeFormBean.lastName}" styleClass="p-inputtext form-control" placeholder="Doe" />
+                    </div>
+                    <div class="form-field">
+                        <label>Email</label>
+                        <p:inputText value="#{employeeFormBean.email}" styleClass="p-inputtext form-control" disabled="true" title="Email cannot be changed" />
+                    </div>
+                    <div class="form-field">
+                        <label>Phone</label>
+                        <p:inputText value="#{employeeFormBean.phone}" styleClass="p-inputtext form-control" placeholder="+91 98765 43210" />
+                    </div>
+                    <div class="form-field">
+                        <label>Department <span class="required">*</span></label>
+                        <p:selectOneMenu value="#{employeeFormBean.departmentId}" styleClass="form-control">
+                            <f:selectItem itemValue="#{null}" itemLabel="-- Select Department --" noSelectionOption="true" />
+                            <f:selectItems value="#{employeeFormBean.departments}" var="dept" itemValue="#{dept.id}" itemLabel="#{dept.name}" />
+                        </p:selectOneMenu>
+                    </div>
+
+                    <div class="form-field">
+                        <label>Designation <span class="required">*</span></label>
+                        <p:inputText value="#{employeeFormBean.designation}" styleClass="p-inputtext form-control" placeholder="Software Engineer" />
+                    </div>
+                    <div class="form-field">
+                        <label>Joining Date <span class="required">*</span></label>
+                        <p:datePicker value="#{employeeFormBean.joiningDate}" pattern="dd/MM/yyyy" styleClass="form-control" showIcon="true" />
+                    </div>
+                    <div class="form-field">
+                        <label>Monthly Salary (₹) <span class="required">*</span></label>
+                        <p:inputNumber value="#{employeeFormBean.monthlySalary}" styleClass="form-control" minValue="0" decimalPlaces="2" />
+                    </div>
+                    <div class="form-field form-field-full">
+                        <label>Reporting Manager</label>
+                        <p:selectOneMenu value="#{employeeFormBean.reportingManagerId}" styleClass="form-control">
+                            <f:selectItem itemValue="#{null}" itemLabel="-- None --" noSelectionOption="true" />
+                            <f:selectItems value="#{employeeFormBean.managers}" var="mgr" itemValue="#{mgr.id}" itemLabel="#{mgr.firstName} #{mgr.lastName} (#{mgr.employeeCode})" />
+                        </p:selectOneMenu>
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:12px; margin-top:24px;">
+                    <p:commandButton value="Update Employee" icon="pi pi-check" styleClass="p-button-sm" action="#{employeeFormBean.save}" ajax="false" process="@form" />
+                    <p:commandButton value="Cancel" icon="pi pi-times" styleClass="p-button-sm p-button-outlined" action="#{employeeFormBean.cancel}"
+                     ajax="false" immediate="true" />
+                </div>
+            </div>
+        </h:form>
+
+    </ui:define>
+</ui:composition>
+</html>

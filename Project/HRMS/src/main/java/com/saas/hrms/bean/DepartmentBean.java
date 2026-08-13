@@ -1,0 +1,140 @@
+package com.saas.hrms.bean;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
+
+import com.saas.hrms.dto.DepartmentRequest;
+import com.saas.hrms.dto.DepartmentResponse;
+import com.saas.hrms.exception.BadRequestException;
+import com.saas.hrms.service.DepartmentService;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.faces.application.FacesMessage;
+import jakarta.faces.context.FacesContext;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+
+@Component
+@Scope("view") 
+@RequiredArgsConstructor
+@Getter
+@Setter
+public class DepartmentBean implements Serializable{
+
+    private final DepartmentService departmentService;
+
+    private List<DepartmentResponse> departments = new ArrayList<>();
+    private List<DepartmentResponse> filteredDepartments;
+
+    private Long editingId;
+    private String name;
+    private String description;
+    private boolean editMode = false;
+
+    private String searchQuery;
+
+    @PostConstruct
+    public void init() {
+        loadDepartments();
+    }
+
+    public void loadDepartments() {
+        try {
+            departments = departmentService.getAllDepartments();
+        } catch (BadRequestException e) {
+            addError(e.getMessage());
+        }
+    }
+
+    public void openAddDialog() {
+        editingId = null;
+        name = null;
+        description = null;
+        editMode = false;
+    }
+
+    public void openEditDialog(DepartmentResponse dept) {
+        editingId = dept.getId();
+        name = dept.getName();
+        description = dept.getDescription();
+        editMode = true;
+    }
+
+    public void save() {
+        FacesContext fc = FacesContext.getCurrentInstance();
+        if (name == null || name.isBlank()) {
+            addError("Department name is required");
+            return;
+        }
+        DepartmentRequest request = new DepartmentRequest();
+        request.setName(name.trim());
+        request.setDescription(description != null ? description.trim() : null);
+
+        try {
+            if (editMode) {
+                departmentService.updateDepartment(editingId, request);
+                fc.addMessage("growl", new FacesMessage(FacesMessage.SEVERITY_INFO, "Department updated successfully", null));
+            } 
+            else {
+                departmentService.createDepartment(request);
+                fc.addMessage("growl", new FacesMessage(FacesMessage.SEVERITY_INFO, "Department created successfully", null));
+            }
+            loadDepartments();
+            editingId = null;
+            name = null;
+            description = null;
+            editMode = false;
+        } catch (BadRequestException e) {
+            addError(e.getMessage());
+        }
+    }
+
+    public void deactivate(Long id) {
+        try {
+            departmentService.deleteDepartment(id);
+            FacesContext.getCurrentInstance().addMessage("growl", new FacesMessage(FacesMessage.SEVERITY_INFO, "Department deactivated successfully", null));
+            loadDepartments();
+        } catch (BadRequestException e) {
+            addError(e.getMessage());
+        }
+    }
+
+    public void search() {
+        if (searchQuery == null || searchQuery.isBlank()) {
+            filteredDepartments = null;
+            return;
+        }
+        String q = searchQuery.trim().toLowerCase();
+        filteredDepartments = new ArrayList<>();
+        for (DepartmentResponse d : departments) {
+            boolean matches =(d.getName() != null && d.getName().toLowerCase().contains(q)) || (d.getDescription() != null && d.getDescription().toLowerCase().contains(q));
+            if (matches) {
+                filteredDepartments.add(d);
+            }
+        }
+    }
+
+    public void clearSearch() {
+        searchQuery = null;
+        filteredDepartments = null;
+    }
+
+    public List<DepartmentResponse> getDisplayList() {
+        if (filteredDepartments != null) {
+            return filteredDepartments;
+        } 
+        else {
+            return departments;
+        }
+    }
+
+    private void addError(String msg) {
+        FacesContext.getCurrentInstance().addMessage("growl", new FacesMessage(FacesMessage.SEVERITY_ERROR, msg, null));
+    }
+    
+}

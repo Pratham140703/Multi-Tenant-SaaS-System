@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:ui="jakarta.faces.facelets">
+
+<ui:composition template="/template.xhtml">
+
+    <ui:define name="pageTitle">Access Denied</ui:define>
+
+    <ui:define name="content">
+        <div class="section-card" style="text-align:center; padding: 48px 24px;">
+            <span class="pi pi-lock" style="font-size:3rem; color:#ef4444; margin-bottom:16px; display:block;" />
+            <h2 style="color:#1e293b; margin-bottom:8px;">Access Denied</h2>
+            <p style="color:#64748b; margin-bottom:24px;">You do not have permission to view this page.</p>
+            <h:link outcome="/index" styleClass="ui-button ui-widget ui-button-text-icon-left">
+                <span class="ui-button-icon-left pi pi-home" />
+                <span class="ui-button-text">Go to Dashboard</span>
+            </h:link>
+        </div>
+    </ui:define>
+
+</ui:composition>
+</html>

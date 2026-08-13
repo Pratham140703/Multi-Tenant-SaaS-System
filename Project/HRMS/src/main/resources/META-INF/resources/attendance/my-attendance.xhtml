@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="primefaces"
+      xmlns:ui="jakarta.faces.facelets">
+
+<ui:composition template="/template.xhtml">
+    <ui:define name="pageTitle">My Attendance</ui:define>
+    <ui:define name="content">
+
+        <h:form id="myAttForm">
+            <p:growl id="growl" life="4000" showDetail="false" />
+			<div class="section-card" style="margin-bottom:20px;">
+			    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+			        <h3 style="margin:0;"><span class="pi pi-clock" style="margin-right:8px;" />My Attendance</h3>      
+			        <div style="display:flex; align-items:center; gap:16px;">
+			            <div style="font-size:24px; font-weight:700; font-family:monospace; background:#f3f4f6; padding:8px 16px; border-radius:8px; 
+			              letter-spacing:2px;">
+			                <h:outputText id="timerDisplay" value="#{myAttendanceBean.elapsedTime}" 
+							style="color:#{myAttendanceBean.checkedInToday and !myAttendanceBean.checkedOutToday ? '#22c55e' : '#6b7280'}" />
+			            </div>
+
+			            <p:poll interval="1" listener="#{myAttendanceBean.onTick}" update="timerDisplay" stop="#{!myAttendanceBean.checkedInToday or myAttendanceBean.checkedOutToday}" />
+			            <p:commandButton value="Check In" icon="pi pi-sign-in" styleClass="p-button-sm p-button-success" action="#{myAttendanceBean.checkIn}"
+			             update="myAttForm" process="@this" disabled="#{myAttendanceBean.checkedInToday}" />
+			            <p:commandButton value="Check Out" icon="pi pi-sign-out" styleClass="p-button-sm p-button-danger" action="#{myAttendanceBean.checkOut}"
+			             update="myAttForm" process="@this" disabled="#{!myAttendanceBean.checkedInToday or myAttendanceBean.checkedOutToday}" />
+			        </div>
+			    </div>
+			</div>
+
+            <div class="section-card" style="margin-bottom:20px;">
+                <h3 style="margin-top:0;"><span class="pi pi-chart-bar" style="margin-right:8px;" />Summary</h3>
+                <div class="form-grid" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:12px;">
+                    <div>
+                        <label>Present Days</label>
+                        <div style="font-size:20px; font-weight:600;">#{myAttendanceBean.summary.presentDays}</div>
+                    </div>
+                    <div>
+                        <label>Absent Days</label>
+                        <div style="font-size:20px; font-weight:600;">#{myAttendanceBean.summary.absentDays}</div>
+                    </div>
+                    <div>
+                        <label>Half Days</label>
+                        <div style="font-size:20px; font-weight:600;">#{myAttendanceBean.summary.halfDays}</div>
+                    </div>
+                    <div>
+                        <label>On Leave</label>
+                        <div style="font-size:20px; font-weight:600;">#{myAttendanceBean.summary.onLeaveDays}</div>
+                    </div>
+                    <div>
+                        <label>Total Hours</label>
+                        <div style="font-size:20px; font-weight:600;">#{myAttendanceBean.summary.totalWorkingHours}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-card">
+                <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+                    <h3 style="margin:0;"><span class="pi pi-list" style="margin-right:8px;" />Attendance History</h3>
+					<div style="display:flex; gap:12px; align-items:flex-end; flex-wrap:nowrap;">
+					    <div style="display:flex; flex-direction:column; gap:4px;">
+					        <span style="font-size:0.75rem; color:#64748b; font-weight:500;">From</span>
+					        <p:datePicker value="#{myAttendanceBean.fromDate}" pattern="dd/MM/yyyy" showIcon="false" appendTo="@(body)" />
+					    </div>
+					    <div style="display:flex; flex-direction:column; gap:4px;">
+					        <span style="font-size:0.75rem; color:#64748b; font-weight:500;">To</span>
+					        <p:datePicker value="#{myAttendanceBean.toDate}" pattern="dd/MM/yyyy" showIcon="false" appendTo="@(body)" />
+					    </div>
+					    <p:commandButton value="Search" icon="pi pi-search" styleClass="p-button-sm" action="#{myAttendanceBean.search}"
+					     update="myAttForm" process="@this myAttForm" />
+					</div>
+                </div>
+
+                <p:dataTable value="#{myAttendanceBean.myAttendance}" var="att" emptyMessage="No attendance records found" stripedRows="true"
+                 styleClass="hrms-table" paginator="true" rows="10" paginatorPosition="bottom" paginatorTemplate="{FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}">
+                    <p:column headerText="Date">
+					   <h:outputText value="#{att.attendanceDate}">
+						  <f:convertDateTime pattern="dd-MMM-yyyy" type="localDate" />
+					   </h:outputText>
+				   </p:column>
+				   <p:column headerText="Check In">
+					  <h:outputText value="#{att.checkInTime}" rendered="#{att.checkInTime != null}">
+						 <f:convertDateTime pattern="hh:mm a" type="localDateTime" />
+					  </h:outputText>
+					  <h:outputText value="—" rendered="#{att.checkInTime == null}" />
+				  </p:column>
+				  <p:column headerText="Check Out">
+					  <h:outputText value="#{att.checkOutTime}" rendered="#{att.checkOutTime != null}">
+					    <f:convertDateTime pattern="hh:mm a" type="localDateTime" />
+					  </h:outputText>
+					  <h:outputText value="—" rendered="#{att.checkOutTime == null}" />
+				 </p:column>
+                    <p:column headerText="Working Hours">
+                      <h:outputText value="#{att.workingHours != null ? att.workingHours : '—'}" />
+                    </p:column>
+                    <p:column headerText="Status" style="width:120px">
+                        <span class="emp-badge #{att.status == 'PRESENT' ? 'badge-active' : (att.status == 'ABSENT' ? 'badge-terminated' : (att.status == 'ON_LEAVE' ? 'badge-on-leave' : 'badge-inactive'))}">
+                            #{att.status}
+                        </span>
+                    </p:column>
+                    <p:column headerText="Marked By" style="width:110px">
+                      <h:outputText value="#{att.markedByHr ? 'HR' : 'Self'}" />
+                    </p:column>
+
+                </p:dataTable>
+            </div>
+        </h:form>
+
+    </ui:define>
+</ui:composition>
+</html>

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="primefaces"
+      xmlns:ui="jakarta.faces.facelets">
+
+<ui:composition template="/template.xhtml">
+    <ui:define name="pageTitle">HR Dashboard</ui:define>
+    <ui:define name="content">
+
+        <h:form id="dashboardForm">
+            <div class="section-card">
+                <h3><span class="pi pi-filter" /> Filter Payroll Period</h3>
+                <div class="filter-bar">
+                    <label>Month:</label>
+                    <p:selectOneMenu value="#{dashboardBean.selectedMonth}" styleClass="p-inputtext">
+                        <f:selectItem itemValue="1"  itemLabel="January"   />
+                        <f:selectItem itemValue="2"  itemLabel="February"  />
+                        <f:selectItem itemValue="3"  itemLabel="March"     />
+                        <f:selectItem itemValue="4"  itemLabel="April"     />
+                        <f:selectItem itemValue="5"  itemLabel="May"       />
+                        <f:selectItem itemValue="6"  itemLabel="June"      />
+                        <f:selectItem itemValue="7"  itemLabel="July"      />
+                        <f:selectItem itemValue="8"  itemLabel="August"    />
+                        <f:selectItem itemValue="9"  itemLabel="September" />
+                        <f:selectItem itemValue="10" itemLabel="October"   />
+                        <f:selectItem itemValue="11" itemLabel="November"  />
+                        <f:selectItem itemValue="12" itemLabel="December"  />
+                    </p:selectOneMenu>
+
+                    <label>Year:</label>
+                    <p:inputText value="#{dashboardBean.selectedYear}" styleClass="p-inputtext" style="width:90px" />
+                    <p:commandButton value="Apply" icon="pi pi-refresh" action="#{dashboardBean.loadDashboard}" update="dashboardForm" styleClass="p-button-sm" />
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card blue">
+                    <div class="stat-icon-wrap">
+                        <span class="pi pi-users" />
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value">#{dashboardBean.dashboard.totalEmployees}</span>
+                        <span class="stat-label">Total Employees</span>
+                    </div>
+                </div>
+
+                <div class="stat-card green">
+                    <div class="stat-icon-wrap">
+                        <span class="pi pi-user-plus" />
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value">#{dashboardBean.dashboard.activeEmployees}</span>
+                        <span class="stat-label">Active Employees</span>
+                    </div>
+                </div>
+
+                <div class="stat-card orange">
+                    <div class="stat-icon-wrap">
+                        <span class="pi pi-calendar-times" />
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value">#{dashboardBean.dashboard.pendingLeaveRequests}</span>
+                        <span class="stat-label">Pending Leaves</span>
+                    </div>
+                </div>
+
+                <div class="stat-card purple">
+                    <div class="stat-icon-wrap">
+                        <span class="pi pi-clock" />
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value">
+                            <h:outputText value="#{dashboardBean.dashboard.todayAttendancePercentage}">
+                                <f:convertNumber maxFractionDigits="1" />
+                            </h:outputText>%
+                        </span>
+                        <span class="stat-label">Today's Attendance</span>
+                    </div>
+                </div>
+
+                <div class="stat-card teal">
+                    <div class="stat-icon-wrap">
+                        <span class="pi pi-wallet" />
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value">
+                            &#8377;<h:outputText value="#{dashboardBean.dashboard.monthlyPayrollCost}">
+                                <f:convertNumber pattern="#,##0.00" />
+                            </h:outputText>
+                        </span>
+                        <span class="stat-label">
+                            Payroll Cost
+                            (#{dashboardBean.monthName} #{dashboardBean.dashboard.payrollYear})
+                        </span>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="section-card">
+                <h3><span class="pi pi-bolt" /> Quick Actions</h3>
+                <div style="display:flex; gap:12px; flex-wrap:wrap;">
+					
+                    <p:commandButton value="Add Employee" icon="pi pi-user-plus" styleClass="p-button-sm p-button-outlined" ajax="false" action="#{dashboardBean.goToAddEmployee}" />
+                    <p:commandButton value="Mark Attendance" icon="pi pi-check-circle" styleClass="p-button-sm p-button-outlined" ajax="false" action="#{dashboardBean.goToAttendance}" />
+                    <p:commandButton value="Approve Leaves" icon="pi pi-calendar-plus" styleClass="p-button-sm p-button-outlined" ajax="false" action="#{dashboardBean.goToLeaves}" />
+                    <p:commandButton value="Generate Payroll" icon="pi pi-cog" styleClass="p-button-sm p-button-outlined" ajax="false" action="#{dashboardBean.goToPayroll}" />
+                </div>
+            </div>
+            <p:growl id="growl" life="4000" showDetail="false" />
+        </h:form>
+
+    </ui:define>
+</ui:composition>
+</html>

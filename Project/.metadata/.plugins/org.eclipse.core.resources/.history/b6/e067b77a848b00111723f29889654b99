@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="primefaces"
+      xmlns:ui="jakarta.faces.facelets">
+
+<ui:composition template="/template.xhtml">
+
+    <ui:define name="pageTitle">Payroll Management</ui:define>
+
+    <ui:define name="content">
+
+        <h:form id="payrollMgmtForm">
+
+            <p:growl id="growl" life="4000" showDetail="false" />
+			<h:inputHidden value="#{payrollManagementBean.filterMonth}" />
+			<h:inputHidden value="#{payrollManagementBean.filterYear}" />
+            <!-- ── Header bar ── -->
+            <div class="section-card" style="margin-bottom:20px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+                    <h3 style="margin:0;">
+                        <span class="pi pi-money-bill" style="margin-right:8px;" />Payroll Management
+                    </h3>
+                    <p:commandButton value="Generate Payroll"
+                                     icon="pi pi-cog"
+                                     styleClass="p-button-sm"
+                                     action="#{payrollManagementBean.openGenerateDialog}"
+                                     update="generateDialog"
+                                     process="@this"
+                                     oncomplete="PF('generateDialogWidget').show()" />
+                </div>
+            </div>
+
+            <!-- ── Filter bar ── -->
+            <div class="section-card" style="margin-bottom:20px;">
+                <div style="display:flex; align-items:flex-end; gap:16px; flex-wrap:wrap;">
+                    <div class="form-field" style="margin-bottom:0;">
+                        <label>Month</label>
+                        <p:selectOneMenu value="#{payrollManagementBean.filterMonth}" styleClass="form-control">
+                            <f:selectItem itemValue="#{null}" itemLabel="-- Select Month --" noSelectionOption="true" />
+                            <f:selectItem itemValue="1"  itemLabel="January" />
+                            <f:selectItem itemValue="2"  itemLabel="February" />
+                            <f:selectItem itemValue="3"  itemLabel="March" />
+                            <f:selectItem itemValue="4"  itemLabel="April" />
+                            <f:selectItem itemValue="5"  itemLabel="May" />
+                            <f:selectItem itemValue="6"  itemLabel="June" />
+                            <f:selectItem itemValue="7"  itemLabel="July" />
+                            <f:selectItem itemValue="8"  itemLabel="August" />
+                            <f:selectItem itemValue="9"  itemLabel="September" />
+                            <f:selectItem itemValue="10" itemLabel="October" />
+                            <f:selectItem itemValue="11" itemLabel="November" />
+                            <f:selectItem itemValue="12" itemLabel="December" />
+                        </p:selectOneMenu>
+                    </div>
+                    <div class="form-field" style="margin-bottom:0;">
+                        <label>Year</label>
+                        <p:inputNumber value="#{payrollManagementBean.filterYear}"
+                                       styleClass="form-control"
+                                       decimalPlaces="0"
+                                       thousandSeparator="" />
+                    </div>
+                    <p:commandButton value="View"
+                                     icon="pi pi-search"
+                                     styleClass="p-button-sm"
+                                     action="#{payrollManagementBean.loadPayroll}"
+                                     update="payrollMgmtForm"
+                                     process="@form" />
+                </div>
+            </div>
+
+            <!-- ── Payroll table ── -->
+            <div class="section-card">
+                <p:dataTable value="#{payrollManagementBean.payrollList}"
+                             var="pr"
+                             emptyMessage="No payroll records found for this month/year"
+                             stripedRows="true"
+                             styleClass="hrms-table"
+                             paginator="true"
+                             rows="10"
+							 paginatorPosition="bottom"
+                             paginatorTemplate="{FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}">
+
+                    <p:column headerText="Employee">
+                        <h:outputText value="#{pr.employeeName}" />
+                        <br />
+                        <small style="color:#888;">#{pr.employeeCode}</small>
+                    </p:column>
+                    <p:column headerText="Period" style="width:140px">
+                        <h:outputText value="#{payrollManagementBean.getMonthName(pr.month)} #{pr.year}" />
+                    </p:column>
+                    <p:column headerText="Monthly Salary" style="width:130px">
+                        <h:outputText value="#{pr.monthlySalary}">
+                            <f:convertNumber pattern="#,##0.00" />
+                        </h:outputText>
+                    </p:column>
+                    <p:column headerText="Present" style="width:75px">
+                        <h:outputText value="#{pr.presentDays}" />
+                    </p:column>
+                    <p:column headerText="Absent" style="width:75px">
+                        <h:outputText value="#{pr.absentDays}" />
+                    </p:column>
+                    <p:column headerText="Half Days" style="width:85px">
+                        <h:outputText value="#{pr.halfDays}" />
+                    </p:column>
+                    <p:column headerText="Deduction" style="width:110px">
+                        <h:outputText value="#{pr.deductionAmount}">
+                            <f:convertNumber pattern="#,##0.00" />
+                        </h:outputText>
+                    </p:column>
+                    <p:column headerText="Net Salary" style="width:120px">
+                        <h:outputText value="#{pr.netSalary}">
+                            <f:convertNumber pattern="#,##0.00" />
+                        </h:outputText>
+                    </p:column>
+                    <p:column headerText="Status" style="width:100px">
+                        <span class="emp-badge #{pr.isPaid ? 'badge-active' : 'badge-inactive'}">
+                            #{pr.isPaid ? 'Paid' : 'Unpaid'}
+                        </span>
+                    </p:column>
+                    <p:column headerText="Actions" style="width:110px">
+                        <p:commandButton value="Mark Paid"
+                                         icon="pi pi-check"
+                                         styleClass="p-button-sm p-button-outlined p-button-success"
+                                         action="#{payrollManagementBean.markAsPaid(pr.id)}"
+                                         update="payrollMgmtForm"
+                                         process="@form"
+                                         rendered="#{!pr.isPaid}" />
+                    </p:column>
+
+                </p:dataTable>
+            </div>
+
+            <!-- ── Generate Payroll Dialog ── -->
+            <p:dialog id="generateDialog"
+                      header="Generate Payroll"
+                      widgetVar="generateDialogWidget"
+                      modal="true"
+                      resizable="false"
+                      width="420"
+                      styleClass="hrms-dialog">
+
+                <div class="dialog-body">
+
+                    <div class="form-field" style="margin-bottom:16px;">
+                        <label>Month <span class="required">*</span></label>
+                        <p:selectOneMenu value="#{payrollManagementBean.genMonth}" styleClass="form-control">
+                            <f:selectItem itemValue="#{null}" itemLabel="-- Select Month --" noSelectionOption="true" />
+                            <f:selectItem itemValue="1"  itemLabel="January" />
+                            <f:selectItem itemValue="2"  itemLabel="February" />
+                            <f:selectItem itemValue="3"  itemLabel="March" />
+                            <f:selectItem itemValue="4"  itemLabel="April" />
+                            <f:selectItem itemValue="5"  itemLabel="May" />
+                            <f:selectItem itemValue="6"  itemLabel="June" />
+                            <f:selectItem itemValue="7"  itemLabel="July" />
+                            <f:selectItem itemValue="8"  itemLabel="August" />
+                            <f:selectItem itemValue="9"  itemLabel="September" />
+                            <f:selectItem itemValue="10" itemLabel="October" />
+                            <f:selectItem itemValue="11" itemLabel="November" />
+                            <f:selectItem itemValue="12" itemLabel="December" />
+                        </p:selectOneMenu>
+                    </div>
+
+                    <div class="form-field" style="margin-bottom:20px;">
+                        <label>Year <span class="required">*</span></label>
+                        <p:inputNumber value="#{payrollManagementBean.genYear}"
+                                       styleClass="form-control"
+                                       decimalPlaces="0"
+                                       thousandSeparator="" />
+                    </div>
+
+					<div style="display:flex; gap:10px; justify-content:center; margin-top:20px; width:100%;">
+                        <p:commandButton value="Generate"
+                                         icon="pi pi-check"
+                                         styleClass="p-button-sm"
+                                         action="#{payrollManagementBean.generatePayroll}"
+                                         update="payrollMgmtForm generateDialog"
+                                         process="generateDialog"
+                                         oncomplete="if(!args.validationFailed) PF('generateDialogWidget').hide()" />
+                        <p:commandButton value="Cancel"
+                                         icon="pi pi-times"
+                                         styleClass="p-button-sm p-button-outlined"
+                                         onclick="PF('generateDialogWidget').hide()"
+                                         type="button" />
+                    </div>
+
+                </div>
+
+            </p:dialog>
+
+        </h:form>
+
+    </ui:define>
+
+</ui:composition>
+</html>

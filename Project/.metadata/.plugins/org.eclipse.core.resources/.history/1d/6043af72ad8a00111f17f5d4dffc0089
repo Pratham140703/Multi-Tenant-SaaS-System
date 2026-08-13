@@ -1,0 +1,173 @@
+package com.saas.hrms.service;
+
+import com.saas.hrms.dto.EmployeeDashboardResponse;
+import com.saas.hrms.dto.HrDashboardResponse;
+import com.saas.hrms.dto.LeaveBalanceResponse;
+import com.saas.hrms.dto.PayrollResponse;
+import com.saas.hrms.entity.Attendance;
+import com.saas.hrms.entity.Employee;
+import com.saas.hrms.entity.Payroll;
+import com.saas.hrms.enums.AttendanceStatus;
+import com.saas.hrms.enums.EmployeeStatus;
+import com.saas.hrms.enums.LeaveStatus;
+import com.saas.hrms.exception.BadRequestException;
+import com.saas.hrms.repository.AttendanceRepository;
+import com.saas.hrms.repository.EmployeeRepository;
+import com.saas.hrms.repository.LeaveRequestRepository;
+import com.saas.hrms.repository.PayrollRepository;
+import com.saas.hrms.util.TenantContext;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class DashboardService {
+
+    private final EmployeeRepository employeeRepository;
+    private final LeaveRequestRepository leaveRequestRepository;
+    private final AttendanceRepository attendanceRepository;
+    private final PayrollRepository payrollRepository;
+    private final LeaveService leaveService;
+    private final PayrollService payrollService;
+
+    public HrDashboardResponse getHrDashboard(Integer month, Integer year) {
+        Long companyId = TenantContext.getTenantId();
+        LocalDate today = LocalDate.now();
+
+        int payrollMonth;
+        if (month != null) {
+            payrollMonth = month;
+        } else {
+            payrollMonth = today.getMonthValue();
+        }
+
+        int payrollYear;
+        if (year != null) {
+            payrollYear = year;
+        } else {
+            payrollYear = today.getYear();
+        }
+
+        List<Employee> employees = employeeRepository.findByCompanyId(companyId);
+
+        long totalEmployees = employees.size();
+        long activeEmployees = 0;
+        for (Employee e : employees) {
+            if (e.getStatus() == EmployeeStatus.ACTIVE) {
+                activeEmployees++;
+            }
+        }
+
+        long pendingLeaveRequests = leaveRequestRepository
+                .findByCompanyIdAndStatus(companyId, LeaveStatus.PENDING)
+                .size();
+
+        List<Attendance> todayRecords = attendanceRepository.findByCompanyIdAndAttendanceDate(companyId, today);
+        long presentToday = 0;
+        for (Attendance a : todayRecords) {
+            if (a.getStatus() == AttendanceStatus.PRESENT) {
+                presentToday++;
+            }
+        }
+
+        double todayAttendancePercentage = 0.0;
+        if (activeEmployees > 0) {
+            todayAttendancePercentage = (presentToday * 100.0) / activeEmployees;
+        }
+
+        List<Payroll> payrolls = payrollRepository.findByCompanyIdAndMonthAndYear(companyId, payrollMonth, payrollYear);
+        double monthlyPayrollCost = 0.0;
+        for (Payroll p : payrolls) {
+            if (p.getNetSalary() != null) {
+                monthlyPayrollCost += p.getNetSalary();
+            }
+        }
+
+        double roundedAttendancePercentage = Math.round(todayAttendancePercentage * 100.0) / 100.0;
+        double roundedPayrollCost = Math.round(monthlyPayrollCost * 100.0) / 100.0;
+
+        return HrDashboardResponse.builder()
+                .totalEmployees(totalEmployees)
+                .activeEmployees(activeEmployees)
+                .pendingLeaveRequests(pendingLeaveRequests)
+                .todayAttendancePercentage(roundedAttendancePercentage)
+                .payrollMonth(payrollMonth)
+                .payrollYear(payrollYear)
+                .monthlyPayrollCost(roundedPayrollCost)
+                .build();
+    }
+
+    public EmployeeDashboardResponse getEmployeeDashboard(Long employeeId, String requesterEmail, boolean isHr) {
+        Long companyId = TenantContext.getTenantId();
+
+        Employee employee = employeeRepository.findByIdAndCompanyId(employeeId, companyId).orElse(null);
+        if (employee == null) {
+            throw new BadRequestException("Employee not found");
+        }
+
+        boolean isOwnRecord = employee.getEmail().equalsIgnoreCase(requesterEmail);
+        if (!isHr && !isOwnRecord) {
+            throw new BadRequestException("You are not allowed to view this employee's dashboard");
+        }
+
+        LocalDate today = LocalDate.now();
+        LocalDate start = today.withDayOfMonth(1);
+        LocalDate end = today.withDayOfMonth(today.lengthOfMonth());
+
+        List<Attendance> records = attendanceRepository
+                .findByEmployeeIdAndAttendanceDateBetween(employeeId, start, end);
+
+        long present = 0;
+        long halfDay = 0;
+        for (Attendance a : records) {
+            if (a.getStatus() == AttendanceStatus.PRESENT) {
+                present++;
+            } else if (a.getStatus() == AttendanceStatus.HALF_DAY) {
+                halfDay++;
+            }
+        }
+
+        long totalMarked = records.size();
+        double attendancePercentage = 0.0;
+        if (totalMarked > 0) {
+            attendancePercentage = ((present + 0.5 * halfDay) * 100.0) / totalMarked;
+        }
+
+        List<LeaveBalanceResponse> balances = leaveService.getEmployeeLeaveBalance(employeeId);
+
+        // Find the most recent payslip by comparing (year, month) as a single sortable number
+        List<PayrollResponse> allPayslips = payrollService.getMyPayroll(employee.getEmail());
+        PayrollResponse lastPayslip = null;
+        for (PayrollResponse p : allPayslips) {
+            if (lastPayslip == null) {
+                lastPayslip = p;
+                continue;
+            }
+
+            int currentRank = p.getYear() * 12 + p.getMonth();
+            int bestRank = lastPayslip.getYear() * 12 + lastPayslip.getMonth();
+
+            if (currentRank > bestRank) {
+                lastPayslip = p;
+            }
+        }
+
+        double roundedAttendancePercentage = Math.round(attendancePercentage * 100.0) / 100.0;
+        String employeeName = employee.getFirstName() + " " + employee.getLastName();
+
+        return EmployeeDashboardResponse.builder()
+                .employeeId(employee.getId())
+                .employeeCode(employee.getEmployeeCode())
+                .employeeName(employeeName)
+                .leaveBalances(balances)
+                .attendanceMonth(today.getMonthValue())
+                .attendanceYear(today.getYear())
+                .attendancePercentageThisMonth(roundedAttendancePercentage)
+                .lastPayslip(lastPayslip)
+                .build();
+    }
+    
+}

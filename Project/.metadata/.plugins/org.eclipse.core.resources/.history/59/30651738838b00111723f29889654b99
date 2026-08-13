@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="primefaces"
+      xmlns:ui="jakarta.faces.facelets">
+
+<ui:composition template="/template.xhtml">
+
+    <ui:define name="pageTitle">My Leave</ui:define>
+
+    <ui:define name="content">
+
+        <h:form id="myLeaveForm">
+
+            <p:growl id="growl" life="4000" showDetail="false" />
+
+            <!-- ── Header bar ── -->
+            <div class="section-card" style="margin-bottom:20px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+                    <h3 style="margin:0;"><span class="pi pi-calendar" style="margin-right:8px;" />My Leave</h3>
+                    <p:commandButton value="Apply Leave"
+                                     icon="pi pi-plus"
+                                     styleClass="p-button-sm"
+                                     action="#{myLeaveBean.openApplyDialog}"
+                                     update="applyDialog"
+                                     process="@this"
+                                     oncomplete="PF('applyDialogWidget').show()" />
+                </div>
+            </div>
+
+            <!-- ── Leave Balance cards ── -->
+            <div class="section-card" style="margin-bottom:20px;">
+                <h3 style="margin-top:0;"><span class="pi pi-wallet" style="margin-right:8px;" />Leave Balance</h3>
+                <p:dataTable value="#{myLeaveBean.myLeaveBalances}"
+                             var="bal"
+                             emptyMessage="No leave balance allocated yet. Contact HR."
+                             stripedRows="true"
+                             styleClass="hrms-table">
+
+                    <p:column headerText="Leave Type">
+                        <h:outputText value="#{bal.leaveTypeName}" />
+                    </p:column>
+                    <p:column headerText="Year" style="width:90px">
+                        <h:outputText value="#{bal.year}" />
+                    </p:column>
+                    <p:column headerText="Total Days" style="width:110px">
+                        <h:outputText value="#{bal.totalDays}" />
+                    </p:column>
+                    <p:column headerText="Used" style="width:90px">
+                        <h:outputText value="#{bal.usedDays}" />
+                    </p:column>
+                    <p:column headerText="Remaining" style="width:110px">
+                        <h:outputText value="#{bal.remainingDays}" />
+                    </p:column>
+
+                </p:dataTable>
+            </div>
+
+            <!-- ── My Leave Requests table ── -->
+            <div class="section-card">
+                <h3 style="margin-top:0;"><span class="pi pi-list" style="margin-right:8px;" />My Leave Requests</h3>
+                <p:dataTable value="#{myLeaveBean.myLeaveRequests}"
+                             var="lr"
+                             emptyMessage="No leave requests found"
+                             stripedRows="true"
+                             styleClass="hrms-table"
+                             paginator="true"
+                             rows="10"
+							 paginatorPosition="bottom"
+                             paginatorTemplate="{FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}">
+
+                    <p:column headerText="Leave Type">
+                        <h:outputText value="#{lr.leaveTypeName}" />
+                    </p:column>
+					<p:column headerText="From">
+					    <h:outputText value="#{lr.fromDate}">
+					        <f:convertDateTime pattern="dd-MMM-yyyy" type="localDate" />
+					    </h:outputText>
+					</p:column>
+					<p:column headerText="To">
+					    <h:outputText value="#{lr.toDate}">
+					        <f:convertDateTime pattern="dd-MMM-yyyy" type="localDate" />
+					    </h:outputText>
+					</p:column>
+                    <p:column headerText="Days" style="width:80px">
+                        <h:outputText value="#{lr.totalDays}" />
+                    </p:column>
+                    <p:column headerText="Reason">
+                        <h:outputText value="#{lr.reason}" />
+                    </p:column>
+                    <p:column headerText="Status" style="width:120px">
+                        <span class="emp-badge #{lr.status == 'APPROVED' ? 'badge-active' : (lr.status == 'REJECTED' ? 'badge-terminated' : (lr.status == 'CANCELLED' ? 'badge-inactive' : 'badge-on-leave'))}">
+                            #{lr.status}
+                        </span>
+                    </p:column>
+                    <p:column headerText="Manager Comment">
+                        <h:outputText value="#{lr.managerComment != null ? lr.managerComment : '—'}" />
+                    </p:column>
+
+                </p:dataTable>
+            </div>
+
+            <!-- ── Apply Leave Dialog ── -->
+            <p:dialog id="applyDialog"
+                      header="Apply Leave"
+                      widgetVar="applyDialogWidget"
+                      modal="true"
+                      resizable="false"
+                      width="460"
+                      styleClass="hrms-dialog">
+
+                <div class="dialog-body">
+
+					<div class="form-field" style="margin-bottom:16px;">
+					    <label>Leave Type <span class="required">*</span></label>
+					    <p:selectOneMenu value="#{myLeaveBean.leaveTypeId}" styleClass="form-control">
+					        <f:selectItem itemValue="#{null}" itemLabel="-- Select Leave Type --" noSelectionOption="true" />
+					        <f:selectItems value="#{myLeaveBean.leaveTypes}" var="leaveType"
+					                       itemValue="#{leaveType.id}"
+					                       itemLabel="#{leaveType.name}" />
+					    </p:selectOneMenu>
+					</div>
+
+                    <div class="form-field" style="margin-bottom:16px;">
+                        <label>From Date <span class="required">*</span></label>
+                        <p:datePicker value="#{myLeaveBean.fromDate}"
+                                      pattern="dd/MM/yyyy"
+                                      styleClass="form-control"
+                                      showIcon="true" />
+                    </div>
+
+                    <div class="form-field" style="margin-bottom:16px;">
+                        <label>To Date <span class="required">*</span></label>
+                        <p:datePicker value="#{myLeaveBean.toDate}"
+                                      pattern="dd/MM/yyyy"
+                                      styleClass="form-control"
+                                      showIcon="true" />
+                    </div>
+
+                    <div class="form-field" style="margin-bottom:20px;">
+                        <label>Reason <span class="required">*</span></label>
+                        <p:inputTextarea value="#{myLeaveBean.reason}"
+                                         styleClass="p-inputtext form-control"
+                                         placeholder="Reason for leave..."
+                                         rows="3"
+                                         autoResize="false" />
+                    </div>
+
+                    <div style="display:flex; gap:10px; justify-content:flex-end;">
+                        <p:commandButton value="Submit"
+                                         icon="pi pi-check"
+                                         styleClass="p-button-sm"
+                                         action="#{myLeaveBean.apply}"
+                                         update="myLeaveForm"
+                                         process="applyDialog"
+                                         oncomplete="if(!args.validationFailed) PF('applyDialogWidget').hide()" />
+                        <p:commandButton value="Cancel"
+                                         icon="pi pi-times"
+                                         styleClass="p-button-sm p-button-outlined"
+                                         onclick="PF('applyDialogWidget').hide()"
+                                         type="button" />
+                    </div>
+
+                </div>
+
+            </p:dialog>
+
+        </h:form>
+
+    </ui:define>
+
+</ui:composition>
+</html>

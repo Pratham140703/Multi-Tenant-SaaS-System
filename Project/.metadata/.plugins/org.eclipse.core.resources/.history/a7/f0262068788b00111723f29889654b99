@@ -1,0 +1,5 @@
+package com.saas.hrms.config;
+
+public class ViewScopeConfig {
+
+}

@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename resource &apos;HRMS/src/main/resources/db/migration/Create a new file called V2__seed_data.sql&apos; to &apos;V2__seed_data.sql&apos;" description="Rename resource &apos;Create a new file called V2__seed_data.sql&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="src/main/resources/db/migration/Create a new file called V2__seed_data.sql" name="V2__seed_data.sql" stamp="1784570771684" updateReferences="true"/>
+</session>

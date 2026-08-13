@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="primefaces"
+      xmlns:ui="jakarta.faces.facelets">
+
+<ui:composition template="/template.xhtml">
+
+    <ui:define name="pageTitle">Leave Management</ui:define>
+
+    <ui:define name="content">
+
+        <h:form id="leaveMgmtForm">
+
+            <p:growl id="growl" life="4000" showDetail="false" />
+
+            <!-- ── Header bar ── -->
+            <div class="section-card" style="margin-bottom:20px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+                    <h3 style="margin:0;"><span class="pi pi-calendar-times" style="margin-right:8px;" />Leave Management</h3>
+                    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                        <p:commandButton value="#{leaveManagementBean.showAll ? 'Show Pending Only' : 'Show All Requests'}"
+                                         icon="#{leaveManagementBean.showAll ? 'pi pi-filter' : 'pi pi-list'}"
+                                         styleClass="p-button-sm p-button-outlined"
+                                         action="#{leaveManagementBean.toggleView}"
+                                         update="leaveMgmtForm"
+                                         process="@this" />
+                        <p:commandButton value="Allocate Balance"
+                                         icon="pi pi-wallet"
+                                         styleClass="p-button-sm"
+                                         action="#{leaveManagementBean.openAllocateDialog}"
+                                         update="allocateDialog"
+                                         process="@this"
+                                         oncomplete="PF('allocateDialogWidget').show()" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Requests table ── -->
+            <div class="section-card">
+                <p:dataTable value="#{leaveManagementBean.displayList}"
+                             var="lr"
+                             emptyMessage="No leave requests found"
+                             stripedRows="true"
+                             styleClass="hrms-table"
+                             paginator="true"
+                             rows="10"
+							 paginatorPosition="bottom"
+                             paginatorTemplate="{FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}">
+
+                    <p:column headerText="Employee">
+                        <h:outputText value="#{lr.employeeName}" />
+                        <br />
+                        <small style="color:#888;">#{lr.employeeCode}</small>
+                    </p:column>
+                    <p:column headerText="Leave Type">
+                        <h:outputText value="#{lr.leaveTypeName}" />
+                    </p:column>
+					<p:column headerText="From">
+					    <h:outputText value="#{lr.fromDate}">
+					        <f:convertDateTime pattern="dd-MMM-yyyy" type="localDate" />
+					    </h:outputText>
+					</p:column>
+					<p:column headerText="To">
+					    <h:outputText value="#{lr.toDate}">
+					        <f:convertDateTime pattern="dd-MMM-yyyy" type="localDate" />
+					    </h:outputText>
+					</p:column>
+                    <p:column headerText="Days" style="width:70px">
+                        <h:outputText value="#{lr.totalDays}" />
+                    </p:column>
+                    <p:column headerText="Reason">
+                        <h:outputText value="#{lr.reason}" />
+                    </p:column>
+                    <p:column headerText="Status" style="width:120px">
+                        <span class="emp-badge #{lr.status == 'APPROVED' ? 'badge-active' : (lr.status == 'REJECTED' ? 'badge-terminated' : (lr.status == 'CANCELLED' ? 'badge-inactive' : 'badge-on-leave'))}">
+                            #{lr.status}
+                        </span>
+                    </p:column>
+                    <p:column headerText="Actions" style="width:140px">
+                        <div style="display:flex; gap:6px;" rendered="#{lr.status == 'PENDING'}">
+							<p:commandButton icon="pi pi-check"
+							                 title="Approve"
+							                 styleClass="p-button-sm p-button-outlined p-button-success"
+							                 action="#{leaveManagementBean.openReviewDialog(lr)}"
+							                 update=":leaveMgmtForm:reviewDialog"
+							                 process="@this"
+							                 oncomplete="PF('reviewDialogWidget').show()" />
+							<p:commandButton icon="pi pi-times"
+							                 title="Reject"
+							                 styleClass="p-button-sm p-button-outlined p-button-danger"
+							                 action="#{leaveManagementBean.openReviewDialog(lr)}"
+							                 update=":leaveMgmtForm:reviewDialog"
+							                 process="@this"
+							                 oncomplete="PF('reviewDialogWidget').show()" />
+                        </div>
+                    </p:column>
+
+                </p:dataTable>
+            </div>
+
+            <!-- ── Approve/Reject Dialog ── -->
+            <p:dialog id="reviewDialog"
+                      header="Review Leave Request"
+                      widgetVar="reviewDialogWidget"
+                      modal="true"
+                      resizable="false"
+                      width="420"
+                      styleClass="hrms-dialog">
+
+                <div class="dialog-body">
+					<h:inputHidden value="#{leaveManagementBean.selectedLeaveRequestId}" />
+					<div class="form-field" style="margin-bottom:16px; display:flex; align-items:center; gap:8px;">
+					    <label style="margin:0;">Employee:</label>
+					    <p:outputLabel value="#{leaveManagementBean.selectedEmployeeName}" style="font-weight:600;" />
+					</div>
+
+                    <div class="form-field" style="margin-bottom:20px;">
+                        <label>Comment (optional)</label>
+                        <p:inputTextarea value="#{leaveManagementBean.reviewComment}"
+                                         styleClass="p-inputtext form-control"
+                                         placeholder="Add a comment..."
+                                         rows="3"
+                                         autoResize="false" />
+                    </div>
+
+                    <div style="display:flex; gap:10px; justify-content:flex-end;">
+						<p:commandButton value="Approve"
+						                 icon="pi pi-check"
+						                 styleClass="p-button-sm p-button-success"
+						                 action="#{leaveManagementBean.approve}"
+						                 update=":leaveMgmtForm"
+						                 process=":leaveMgmtForm:reviewDialog"
+						                 oncomplete="PF('reviewDialogWidget').hide()" />
+						<p:commandButton value="Reject"
+						                 icon="pi pi-times"
+						                 styleClass="p-button-sm p-button-danger"
+						                 action="#{leaveManagementBean.reject}"
+						                 update=":leaveMgmtForm"
+						                 process=":leaveMgmtForm:reviewDialog"
+						                 oncomplete="PF('reviewDialogWidget').hide()" />
+                        <p:commandButton value="Cancel"
+                                         icon="pi pi-times"
+                                         styleClass="p-button-sm p-button-outlined"
+                                         onclick="PF('reviewDialogWidget').hide()"
+                                         type="button" />
+                    </div>
+
+                </div>
+
+            </p:dialog>
+
+            <!-- ── Allocate Balance Dialog ── -->
+            <p:dialog id="allocateDialog"
+                      header="Allocate Leave Balance"
+                      widgetVar="allocateDialogWidget"
+                      modal="true"
+                      resizable="false"
+                      width="460"
+                      styleClass="hrms-dialog">
+
+                <div class="dialog-body">
+
+                    <div class="form-field" style="margin-bottom:16px;">
+                        <label>Employee <span class="required">*</span></label>
+                        <p:selectOneMenu value="#{leaveManagementBean.allocEmployeeId}" styleClass="form-control">
+                            <f:selectItem itemValue="#{null}" itemLabel="-- Select Employee --" noSelectionOption="true" />
+                            <f:selectItems value="#{leaveManagementBean.employees}" var="emp"
+                                           itemValue="#{emp.id}"
+                                           itemLabel="#{emp.firstName} #{emp.lastName} (#{emp.employeeCode})" />
+                        </p:selectOneMenu>
+                    </div>
+
+					<div class="form-field" style="margin-bottom:16px;">
+					    <label>Leave Type <span class="required">*</span></label>
+					    <p:selectOneMenu value="#{leaveManagementBean.allocLeaveTypeId}" styleClass="form-control">
+					        <f:selectItem itemValue="#{null}" itemLabel="-- Select Leave Type --" noSelectionOption="true" />
+					        <f:selectItems value="#{leaveManagementBean.leaveTypes}" var="leaveType"
+					                       itemValue="#{leaveType.id}"
+					                       itemLabel="#{leaveType.name}" />
+					    </p:selectOneMenu>
+					</div>
+
+                    <div class="form-field" style="margin-bottom:16px;">
+                        <label>Total Days <span class="required">*</span></label>
+                        <p:inputNumber value="#{leaveManagementBean.allocDays}"
+                                       styleClass="form-control"
+                                       minValue="1"
+                                       decimalPlaces="0" />
+                    </div>
+
+                    <div class="form-field" style="margin-bottom:20px;">
+                        <label>Year <span class="required">*</span></label>
+                        <p:inputNumber value="#{leaveManagementBean.allocYear}"
+                                       styleClass="form-control"
+                                       decimalPlaces="0"
+                                       thousandSeparator="" />
+                    </div>
+
+                    <div style="display:flex; gap:10px; justify-content:flex-end;">
+                        <p:commandButton value="Allocate"
+                                         icon="pi pi-check"
+                                         styleClass="p-button-sm"
+                                         action="#{leaveManagementBean.allocateBalance}"
+                                         update="allocateDialog"
+                                         process="allocateDialog"
+                                         oncomplete="if(!args.validationFailed) PF('allocateDialogWidget').hide()" />
+                        <p:commandButton value="Cancel"
+                                         icon="pi pi-times"
+                                         styleClass="p-button-sm p-button-outlined"
+                                         onclick="PF('allocateDialogWidget').hide()"
+                                         type="button" />
+                    </div>
+
+                </div>
+
+            </p:dialog>
+
+        </h:form>
+
+    </ui:define>
+
+</ui:composition>
+</html>

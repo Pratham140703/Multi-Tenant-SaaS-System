@@ -1,0 +1,161 @@
+package com.saas.hrms.bean;
+
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
+
+import com.saas.hrms.dto.AttendanceResponse;
+import com.saas.hrms.dto.AttendanceSummaryResponse;
+import com.saas.hrms.dto.EmployeeResponse;
+import com.saas.hrms.exception.BadRequestException;
+import com.saas.hrms.service.AttendanceService;
+import com.saas.hrms.service.EmployeeService;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.faces.application.FacesMessage;
+import jakarta.faces.context.FacesContext;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+
+@Component
+@Scope("view")
+@RequiredArgsConstructor
+@Getter
+@Setter
+public class MyAttendanceBean {
+
+    private final AttendanceService attendanceService;
+    private final EmployeeService employeeService;
+    private final SessionBean sessionBean;
+
+    private EmployeeResponse currentEmployee;
+
+    private List<AttendanceResponse> myAttendance = new ArrayList<>();
+    private AttendanceSummaryResponse summary;
+
+    private LocalDate fromDate;
+    private LocalDate toDate;
+
+    private boolean checkedInToday = false;
+    private boolean checkedOutToday = false;
+    
+    private AttendanceResponse todayAttendance;
+
+    @PostConstruct
+    public void init() {
+        if (sessionBean.getPrincipal() == null) {
+            return;
+        }
+        try {
+            currentEmployee = employeeService.getEmployeeByEmail(sessionBean.getPrincipal().getEmail());
+            fromDate = LocalDate.now().withDayOfMonth(1);
+            toDate = LocalDate.now();
+            loadAttendance();
+            loadSummary();
+            refreshTodayStatus();
+        } catch (BadRequestException e) {
+            addError(e.getMessage());
+        }
+    }
+
+    public void loadAttendance() {
+        if (fromDate == null || toDate == null) {
+            addError("Please select both from and to dates");
+            return;
+        }
+        try {
+            myAttendance = attendanceService.getMyAttendance(sessionBean.getPrincipal().getEmail(), fromDate, toDate);
+        } catch (BadRequestException e) {
+            addError(e.getMessage());
+        }
+    }
+
+    public void loadSummary() {
+        if (currentEmployee == null || fromDate == null || toDate == null) {
+            return;
+        }
+        try {
+            summary = attendanceService.getMonthlySummary( currentEmployee.getId(), fromDate, toDate, sessionBean.getPrincipal().getEmail(), false);
+        } catch (BadRequestException e) {
+            addError(e.getMessage());
+        }
+    }
+
+    public void search() {
+        loadAttendance();
+        loadSummary();
+    }
+
+    private void refreshTodayStatus() {
+        checkedInToday = false;
+        checkedOutToday = false;
+        todayAttendance = null;
+        LocalDate today = LocalDate.now();
+        for (AttendanceResponse a : myAttendance) {
+            if (a.getAttendanceDate().equals(today)) {
+            	todayAttendance = a;
+                checkedInToday = a.getCheckInTime() != null;
+                checkedOutToday = a.getCheckOutTime() != null;
+                break;
+            }
+        }
+    }
+
+    public void checkIn() {
+        try {
+            attendanceService.checkIn(sessionBean.getPrincipal().getEmail());
+            FacesContext.getCurrentInstance().addMessage("growl", new FacesMessage(FacesMessage.SEVERITY_INFO, "Checked in successfully", null));
+            loadAttendance();
+            loadSummary();
+            refreshTodayStatus();
+        } catch (BadRequestException e) {
+            addError(e.getMessage());
+        }
+    }
+
+    public void checkOut() {
+        try {
+            attendanceService.checkOut(sessionBean.getPrincipal().getEmail());
+            FacesContext.getCurrentInstance().addMessage("growl", new FacesMessage(FacesMessage.SEVERITY_INFO, "Checked out successfully", null));
+            loadAttendance();
+            loadSummary();
+            refreshTodayStatus();
+        } catch (BadRequestException e) {
+            addError(e.getMessage());
+        }
+    }
+
+    private void addError(String msg) {
+        FacesContext.getCurrentInstance().addMessage("growl", new FacesMessage(FacesMessage.SEVERITY_ERROR, msg, null));
+    }
+    
+    public String getElapsedTime() {
+        if (todayAttendance == null || todayAttendance.getCheckInTime() == null) {
+            return "00:00:00";
+        }
+        LocalDateTime checkIn = todayAttendance.getCheckInTime();
+        LocalDateTime end = (todayAttendance.getCheckOutTime() != null) ? todayAttendance.getCheckOutTime() : LocalDateTime.now();
+        long totalSeconds = Duration.between(checkIn, end).getSeconds();
+        if (totalSeconds < 0) totalSeconds = 0;
+        long hours   = totalSeconds / 3600;
+        long minutes = (totalSeconds % 3600) / 60;
+        long seconds = totalSeconds % 60;
+
+        return String.format("%02d:%02d:%02d", hours, minutes, seconds);
+    }
+
+    public void onTick() {
+        if (todayAttendance == null || todayAttendance.getCheckInTime() == null) return;
+        long elapsed = Duration.between(todayAttendance.getCheckInTime(), LocalDateTime.now()).getSeconds();
+        if (elapsed >= 12 * 60 * 60) {
+            checkOut();
+        }
+    }
+    
+}

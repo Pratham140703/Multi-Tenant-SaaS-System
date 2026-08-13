@@ -1,0 +1,170 @@
+package com.saas.hrms.bean;
+
+import com.saas.hrms.dto.EmployeeResponse;
+import com.saas.hrms.dto.LeaveRequestResponse;
+import com.saas.hrms.dto.LeaveReviewRequest;
+import com.saas.hrms.dto.LeaveTypeResponse;
+import com.saas.hrms.exception.BadRequestException;
+import com.saas.hrms.service.EmployeeService;
+import com.saas.hrms.service.LeaveService;
+import jakarta.annotation.PostConstruct;
+import jakarta.faces.application.FacesMessage;
+import jakarta.faces.context.FacesContext;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import org.springframework.stereotype.Component;
+import org.springframework.web.context.annotation.RequestScope;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Component
+@RequestScope
+@RequiredArgsConstructor
+@Getter
+@Setter
+public class LeaveManagementBean {
+
+    private final LeaveService leaveService;
+    private final EmployeeService employeeService;
+    private final SessionBean sessionBean;
+
+    private List<LeaveRequestResponse> pendingRequests = new ArrayList<>();
+    private List<LeaveRequestResponse> allRequests = new ArrayList<>();
+    private boolean showAll = false;
+
+    private List<EmployeeResponse> employees = new ArrayList<>();
+    private List<LeaveTypeResponse> leaveTypes = new ArrayList<>();
+
+    private Long selectedLeaveRequestId;
+    private String selectedEmployeeName;
+    private String reviewComment;
+
+    private Long allocEmployeeId;
+    private Long allocLeaveTypeId;
+    private Integer allocDays;
+    private Integer allocYear;
+
+    @PostConstruct
+    public void init() {
+        loadPendingRequests();
+        try {
+            employees = employeeService.getAllEmployees();
+            leaveTypes = leaveService.getAllLeaveTypes();
+        } catch (BadRequestException e) {
+            addError(e.getMessage());
+        }
+    }
+
+    public void loadPendingRequests() {
+        try {
+            pendingRequests = leaveService.getPendingLeaveRequests();
+        } catch (BadRequestException e) {
+            addError(e.getMessage());
+        }
+    }
+
+    public void loadAllRequests() {
+        try {
+            allRequests = leaveService.getAllLeaveRequests();
+        } catch (BadRequestException e) {
+            addError(e.getMessage());
+        }
+    }
+
+    public void toggleView() {
+        showAll = !showAll;
+        if (showAll) {
+            loadAllRequests();
+        } 
+        else {
+            loadPendingRequests();
+        }
+    }
+
+    public List<LeaveRequestResponse> getDisplayList() {
+        if (showAll) {
+            return allRequests;
+        } 
+        else {
+            return pendingRequests;
+        }
+    }
+
+    public void openReviewDialog(LeaveRequestResponse lr) {
+        selectedLeaveRequestId = lr.getId();
+        selectedEmployeeName = lr.getEmployeeName();
+        reviewComment = null;
+    }
+
+    public void approve() {
+        review("APPROVE");
+    }
+
+    public void reject() {
+        review("REJECT");
+    }
+
+    private void review(String decision) {
+        LeaveReviewRequest request = new LeaveReviewRequest();
+        request.setDecision(decision);
+        request.setComment(reviewComment);
+        try {
+            leaveService.reviewLeave(selectedLeaveRequestId, request, sessionBean.getPrincipal().getEmail());
+            FacesContext.getCurrentInstance().addMessage("growl",
+                new FacesMessage(FacesMessage.SEVERITY_INFO, "Leave request " + decision.toLowerCase() + "d successfully", null));
+            loadPendingRequests();
+            if (showAll) {
+                loadAllRequests();
+            }
+            selectedLeaveRequestId = null;
+            selectedEmployeeName = null;
+            reviewComment = null;
+        } catch (BadRequestException e) {
+            addError(e.getMessage());
+        }
+    }
+
+    public void openAllocateDialog() {
+        allocEmployeeId = null;
+        allocLeaveTypeId = null;
+        allocDays = null;
+        allocYear = java.time.LocalDate.now().getYear();
+    }
+
+    public void allocateBalance() {
+        if (allocEmployeeId == null) {
+            addError("Please select an employee");
+            return;
+        }
+        if (allocLeaveTypeId == null) {
+            addError("Please select a leave type");
+            return;
+        }
+        if (allocDays == null || allocDays < 1) {
+            addError("Days must be at least 1");
+            return;
+        }
+        if (allocYear == null) {
+            addError("Year is required");
+            return;
+        }
+
+        try {
+            leaveService.allocateLeaveBalance(allocEmployeeId, allocLeaveTypeId, allocDays, allocYear);
+            FacesContext.getCurrentInstance().addMessage("growl", new FacesMessage(FacesMessage.SEVERITY_INFO, "Leave balance allocated successfully", null));
+            allocEmployeeId = null;
+            allocLeaveTypeId = null;
+            allocDays = null;
+            allocYear = null;
+        } catch (BadRequestException e) {
+            addError(e.getMessage());
+        }
+    }
+
+    private void addError(String msg) {
+        FacesContext.getCurrentInstance().addMessage("growl", new FacesMessage(FacesMessage.SEVERITY_ERROR, msg, null));
+    }
+    
+}

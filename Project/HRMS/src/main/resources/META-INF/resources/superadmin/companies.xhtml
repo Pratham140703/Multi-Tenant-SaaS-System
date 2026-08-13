@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="primefaces"
+      xmlns:ui="jakarta.faces.facelets">
+
+<ui:composition template="/template.xhtml">
+    <ui:define name="pageTitle">Company Management</ui:define>
+    <ui:define name="content">
+
+        <h:form id="companiesForm">
+            <p:growl id="growl" life="4000" showDetail="false" />
+            <div class="section-card" style="margin-bottom:20px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+                    <h3 style="margin:0;">
+                        <span class="pi pi-building" style="margin-right:8px;" />Company Management
+                    </h3>
+                </div>
+            </div>
+
+            <div class="section-card">
+                <p:dataTable value="#{superAdminBean.companies}" var="company" emptyMessage="No companies found" stripedRows="true" styleClass="hrms-table"
+                 paginator="true" rows="10" paginatorPosition="bottom" paginatorTemplate="{FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}">
+                    <p:column headerText="Company">
+                        <h:outputText value="#{company.name}" style="font-weight:600;" />
+                        <br />
+                        <small style="color:#888;">#{company.email}</small>
+                    </p:column>
+                    <p:column headerText="Phone" style="width:130px">
+                        <h:outputText value="#{company.phone}" />
+                    </p:column>
+                    <p:column headerText="Employees" style="width:100px">
+                        <h:outputText value="#{company.employeeCount}" />
+                    </p:column>
+                    <p:column headerText="Plan" style="width:110px">
+                        <span class="emp-badge badge-on-leave">
+                            #{company.planType}
+                        </span>
+                    </p:column>
+                    <p:column headerText="Status" style="width:100px">
+                        <span class="emp-badge #{company.isActive ? 'badge-active' : 'badge-inactive'}">
+                            #{company.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                    </p:column>
+                    <p:column headerText="Registered" style="width:140px">
+                        <h:outputText value="#{company.createdAt}">
+                            <f:convertDateTime pattern="dd-MMM-yyyy" type="localDateTime" />
+                        </h:outputText>
+                    </p:column>
+                    <p:column headerText="Actions" style="width:200px">
+                        <div style="display:flex; gap:6px;">
+                            <p:commandButton icon="pi pi-check-circle" title="Activate" styleClass="p-button-sm p-button-outlined p-button-success"
+                             action="#{superAdminBean.activate(company.id)}" update="companiesForm" process="@this" rendered="#{!company.isActive}" />
+                            <p:commandButton icon="pi pi-ban" title="Deactivate" styleClass="p-button-sm p-button-outlined p-button-danger"
+                             action="#{superAdminBean.deactivate(company.id)}" update="companiesForm" process="@this" rendered="#{company.isActive}" />
+                            <p:commandButton icon="pi pi-tag" title="Change Plan" styleClass="p-button-sm p-button-outlined" action="#{superAdminBean.openPlanDialog(company)}"
+                             update=":planDialog" process="@this" oncomplete="PF('planDialogWidget').show()" />
+                        </div>
+                    </p:column>
+                </p:dataTable>
+            </div>
+        </h:form>
+
+		 <p:dialog id="planDialog" header="Change Plan — #{superAdminBean.selectedCompanyName}" widgetVar="planDialogWidget" modal="true" resizable="false"
+		  width="400" styleClass="hrms-dialog">
+		        <h:form id="planDialogForm">
+		            <div class="dialog-body">
+						<h:inputHidden value="#{superAdminBean.selectedCompanyId}" />
+
+		                <div class="form-field" style="margin-bottom:20px;">
+		                    <label>Plan Type <span class="required">*</span></label>
+		                    <p:selectOneMenu value="#{superAdminBean.selectedPlanType}" styleClass="form-control">
+		                        <f:selectItem itemValue="#{null}" itemLabel="-- Select Plan --" noSelectionOption="true" />
+		                        <f:selectItem itemValue="FREE" itemLabel="Free" />
+		                        <f:selectItem itemValue="PRO" itemLabel="Pro" />
+		                        <f:selectItem itemValue="ENTERPRISE" itemLabel="Enterprise" />
+		                    </p:selectOneMenu>
+		                </div>
+
+		                <div style="display:flex; gap:10px; justify-content:flex-end;">
+		                    <p:commandButton value="Update" icon="pi pi-check" styleClass="p-button-sm" action="#{superAdminBean.updatePlan}"
+		                     update=":companiesForm :planDialog" process="planDialogForm" oncomplete="if(!args.validationFailed) PF('planDialogWidget').hide()" />
+		                    <p:commandButton value="Cancel" icon="pi pi-times" styleClass="p-button-sm p-button-outlined" onclick="PF('planDialogWidget').hide()"
+		                     type="button" />
+		                </div>
+		            </div>
+		        </h:form>
+		    </p:dialog>
+
+		</ui:define>
+</ui:composition>
+</html>

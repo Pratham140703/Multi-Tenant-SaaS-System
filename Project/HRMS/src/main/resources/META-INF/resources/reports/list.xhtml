@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="primefaces"
+      xmlns:ui="jakarta.faces.facelets">
+
+<ui:composition template="/template.xhtml">
+    <ui:define name="pageTitle">Reports</ui:define>
+    <ui:define name="content">
+
+        <h:form id="reportsForm">
+            <p:growl id="growl" life="4000" showDetail="false" />
+
+            <div class="section-card" style="margin-bottom:20px;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <span class="pi pi-chart-bar" style="font-size:1.4rem;" />
+                    <h3 style="margin:0;">Reports</h3>
+                </div>
+            </div>
+
+            <div class="section-card" style="margin-bottom:20px;">
+                <h3 style="margin-top:0;">
+                    <span class="pi pi-sitemap" style="margin-right:8px;" />Department Headcount
+                </h3>
+				
+                <p:dataTable value="#{reportBean.headcountReport}" var="row" emptyMessage="No active departments found" stripedRows="true" styleClass="hrms-table">
+                    <p:column headerText="Department">
+                        <h:outputText value="#{row.departmentName}" style="font-weight:600;" />
+                    </p:column>
+                    <p:column headerText="Active Employees" style="width:160px">
+                        <h:outputText value="#{row.employeeCount}" />
+                    </p:column>
+
+                </p:dataTable>
+            </div>
+
+            <div class="section-card" style="margin-bottom:20px;">
+                <h3 style="margin-top:0;">
+                    <span class="pi pi-clock" style="margin-right:8px;" />Monthly Attendance Report
+                </h3>
+
+                <div style="display:flex; align-items:flex-end; gap:16px; flex-wrap:wrap; margin-bottom:20px;">
+                    <div class="form-field" style="margin-bottom:0;">
+                        <label>Month</label>
+                        <p:selectOneMenu value="#{reportBean.filterMonth}" styleClass="form-control">
+                            <f:selectItem itemValue="#{null}" itemLabel="-- Select Month --" noSelectionOption="true" />
+                            <f:selectItem itemValue="1"  itemLabel="January" />
+                            <f:selectItem itemValue="2"  itemLabel="February" />
+                            <f:selectItem itemValue="3"  itemLabel="March" />
+                            <f:selectItem itemValue="4"  itemLabel="April" />
+                            <f:selectItem itemValue="5"  itemLabel="May" />
+                            <f:selectItem itemValue="6"  itemLabel="June" />
+                            <f:selectItem itemValue="7"  itemLabel="July" />
+                            <f:selectItem itemValue="8"  itemLabel="August" />
+                            <f:selectItem itemValue="9"  itemLabel="September" />
+                            <f:selectItem itemValue="10" itemLabel="October" />
+                            <f:selectItem itemValue="11" itemLabel="November" />
+                            <f:selectItem itemValue="12" itemLabel="December" />
+                        </p:selectOneMenu>
+                    </div>
+                    <div class="form-field" style="margin-bottom:0;">
+                        <label>Year</label>
+                        <p:inputNumber value="#{reportBean.filterYear}" styleClass="form-control" decimalPlaces="0" thousandSeparator="" />
+                    </div>
+                    <p:commandButton value="Apply" icon="pi pi-search" styleClass="p-button-sm" action="#{reportBean.applyFilter}" update="reportsForm" process="@form" />
+                </div>
+
+                <p:dataTable value="#{reportBean.attendanceReport}" var="row" emptyMessage="No attendance records found for this month/year"
+                 stripedRows="true" styleClass="hrms-table" paginator="true" rows="10" paginatorPosition="bottom"
+                 paginatorTemplate="{FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}">
+                    <p:column headerText="Employee">
+                        <h:outputText value="#{row.employeeName}" style="font-weight:600;" />
+                        <br />
+                        <small style="color:#888;">#{row.employeeCode}</small>
+                    </p:column>
+                    <p:column headerText="Present" style="width:80px">
+                        <h:outputText value="#{row.presentDays}" />
+                    </p:column>
+                    <p:column headerText="Absent" style="width:80px">
+                        <h:outputText value="#{row.absentDays}" />
+                    </p:column>
+                    <p:column headerText="Half Days" style="width:90px">
+                        <h:outputText value="#{row.halfDays}" />
+                    </p:column>
+                    <p:column headerText="On Leave" style="width:90px">
+                        <h:outputText value="#{row.onLeaveDays}" />
+                    </p:column>
+                    <p:column headerText="Attendance %" style="width:120px">
+                        <h:outputText value="#{row.attendancePercentage}">
+                            <f:convertNumber maxFractionDigits="1" />
+                        </h:outputText>%
+                    </p:column>
+
+                </p:dataTable>
+            </div>
+        </h:form>
+
+    </ui:define>
+</ui:composition>
+</html>

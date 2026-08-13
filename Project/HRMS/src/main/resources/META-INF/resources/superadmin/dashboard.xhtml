@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:f="http://xmlns.jcp.org/jsf/core"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
+
+<ui:composition template="/template.xhtml">
+    <ui:define name="title">Super Admin Dashboard</ui:define>
+    <ui:define name="content">
+
+        <p:growl id="growl" showDetail="false" life="4000"/>
+        <div class="page-header">
+            <h2>Super Admin Dashboard</h2>
+            <p class="page-subtitle">Platform-wide overview</p>
+        </div>
+
+        <div class="stat-cards-grid">
+            <div class="stat-card blue">
+                <div class="stat-icon-wrap">
+                    <i class="pi pi-building"/>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value">#{superAdminDashboardBean.totalCompanies}</span>
+                    <span class="stat-label">Total Companies</span>
+                </div>
+            </div>
+            <div class="stat-card green">
+                <div class="stat-icon-wrap">
+                    <i class="pi pi-check-circle"/>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value">#{superAdminDashboardBean.activeCompanies}</span>
+                    <span class="stat-label">Active Companies</span>
+                </div>
+            </div>
+
+            <div class="stat-card orange">
+                <div class="stat-icon-wrap">
+                    <i class="pi pi-ban"/>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value">#{superAdminDashboardBean.inactiveCompanies}</span>
+                    <span class="stat-label">Inactive Companies</span>
+                </div>
+            </div>
+
+            <div class="stat-card purple">
+                <div class="stat-icon-wrap">
+                    <i class="pi pi-users"/>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value">#{superAdminDashboardBean.totalEmployees}</span>
+                    <span class="stat-label">Total Employees</span>
+                </div>
+            </div>
+
+        </div>
+
+		<div class="section-card" style="margin-top: 2rem;">
+		    <h3>Quick Actions</h3>
+		    <h:form>
+		        <div style="margin-top: 1rem;">
+		            <p:commandButton value="Manage Companies" icon="pi pi-building" ajax="false" action="#{superAdminDashboardBean.goToCompanies}"
+		             styleClass="ui-button-primary"/>
+		        </div>
+		    </h:form>
+		</div>
+
+    </ui:define>
+</ui:composition>
+</html>

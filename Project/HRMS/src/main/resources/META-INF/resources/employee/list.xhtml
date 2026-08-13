@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="primefaces"
+      xmlns:ui="jakarta.faces.facelets">
+
+<ui:composition template="/template.xhtml">
+    <ui:define name="pageTitle">Employees</ui:define>
+    <ui:define name="content">
+
+        <h:form id="employeeForm">
+            <p:growl id="growl" life="4000" showDetail="false" />
+            <div class="section-card" style="margin-bottom:20px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+                    <h3 style="margin:0;"><span class="pi pi-id-card" style="margin-right:8px;" />Employee List</h3>
+                    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                        <p:inputText value="#{employeeListBean.searchQuery}" placeholder="Search by name, email, code..." styleClass="p-inputtext" style="width:260px" />
+                        <p:commandButton value="Search" icon="pi pi-search" styleClass="p-button-sm" action="#{employeeListBean.search}"
+                         update="employeeForm" process="@form" />
+                        <p:commandButton value="Clear" icon="pi pi-times" styleClass="p-button-sm p-button-outlined" action="#{employeeListBean.clearSearch}"
+                         update="employeeForm" />
+                        <p:button value="Add Employee" icon="pi pi-plus" styleClass="p-button-sm" outcome="/employee/add" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-card">
+                <p:dataTable id="empTable" value="#{employeeListBean.displayList}" var="emp" emptyMessage="No employees found" stripedRows="true"
+                 styleClass="hrms-table" paginator="true" rows="10" paginatorPosition="bottom" paginatorTemplate="{FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}"
+                 rowsPerPageTemplate="10,25,50">
+                    <p:column headerText="Code" style="width:110px">
+                        <h:outputText value="#{emp.employeeCode}" />
+                    </p:column>
+                    <p:column headerText="Name">
+                        <h:outputText value="#{emp.firstName} #{emp.lastName}" />
+                    </p:column>
+                    <p:column headerText="Email">
+                        <h:outputText value="#{emp.email}" />
+                    </p:column>
+                    <p:column headerText="Department">
+                        <h:outputText value="#{emp.departmentName}" />
+                    </p:column>
+                    <p:column headerText="Designation">
+                        <h:outputText value="#{emp.designation}" />
+                    </p:column>
+                    <p:column headerText="Joining Date" style="width:120px">
+                        <h:outputText value="#{emp.joiningDate}">
+                            <f:convertDateTime pattern="dd MMM yyyy" type="localDate" />
+                        </h:outputText>
+                    </p:column>
+                    <p:column headerText="Status" style="width:110px">
+                        <span class="emp-badge #{employeeListBean.statusBadgeClass(emp.status)}">
+						 #{emp.status}
+                        </span>
+                    </p:column>
+                    <p:column headerText="Actions" style="width:140px">
+                        <div style="display:flex; gap:6px;">
+                            <p:button icon="pi pi-pencil" title="Edit" styleClass="p-button-sm p-button-outlined p-button-info" outcome="/employee/edit">
+                                <f:param name="employeeId" value="#{emp.id}" />
+                            </p:button>
+							
+                            <p:commandButton icon="pi pi-ban" title="Deactivate" styleClass="p-button-sm p-button-outlined p-button-danger"
+                             rendered="#{emp.status == 'ACTIVE'}" action="#{employeeListBean.deactivate(emp.id)}" update="employeeForm" process="@this">
+                                <p:confirm header="Confirm Deactivate" message="Deactivate #{emp.firstName} #{emp.lastName}?" icon="pi pi-exclamation-triangle" />
+                            </p:commandButton>
+                        </div>
+                    </p:column>
+                </p:dataTable>
+            </div>
+
+            <p:confirmDialog global="true" showEffect="fade" hideEffect="fade">
+                <p:commandButton value="Yes" type="button" styleClass="p-button-danger p-button-sm ui-confirmdialog-yes" />
+                <p:commandButton value="No"  type="button" styleClass="p-button-outlined p-button-sm ui-confirmdialog-no" />
+            </p:confirmDialog>
+        </h:form>
+
+    </ui:define>
+</ui:composition>
+</html>

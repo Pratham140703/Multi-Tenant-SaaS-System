@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="primefaces"
+      xmlns:ui="jakarta.faces.facelets">
+
+<ui:composition template="/template.xhtml">
+
+    <ui:define name="pageTitle">Leave Types</ui:define>
+
+    <ui:define name="content">
+
+        <h:form id="leaveTypeForm">
+
+            <p:growl id="growl" life="4000" showDetail="false" />
+
+            <!-- ── Header bar ── -->
+            <div class="section-card" style="margin-bottom:20px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+                    <h3 style="margin:0;"><span class="pi pi-tags" style="margin-right:8px;" />Leave Types</h3>
+                    <p:commandButton value="Add Leave Type"
+                                     icon="pi pi-plus"
+                                     styleClass="p-button-sm"
+                                     action="#{leaveTypeBean.openAddDialog}"
+                                     update="leaveTypeDialog"
+                                     process="@this"
+                                     oncomplete="PF('leaveTypeDialogWidget').show()" />
+                </div>
+            </div>
+
+            <!-- ── Leave Type table ── -->
+            <div class="section-card">
+                <p:dataTable value="#{leaveTypeBean.leaveTypes}"
+                             var="leaveType"
+                             emptyMessage="No leave types found"
+                             stripedRows="true"
+                             styleClass="hrms-table"
+                             paginator="true"
+                             rows="10"
+							 paginatorPosition="bottom"
+                             paginatorTemplate="{FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}">
+
+                    <p:column headerText="Leave Type Name">
+                        <h:outputText value="#{leaveType.name}" />
+                    </p:column>
+
+                    <p:column headerText="Description">
+                        <h:outputText value="#{leaveType.description != null ? leaveType.description : '—'}" />
+                    </p:column>
+
+                    <p:column headerText="Max Days / Year" style="width:150px">
+                        <h:outputText value="#{leaveType.maxDaysPerYear}" />
+                    </p:column>
+
+                    <p:column headerText="Status" style="width:110px">
+                        <span class="emp-badge #{leaveType.isActive ? 'badge-active' : 'badge-inactive'}">
+                            #{leaveType.isActive ? 'ACTIVE' : 'INACTIVE'}
+                        </span>
+                    </p:column>
+
+                </p:dataTable>
+            </div>
+
+            <!-- ── Add Dialog ── -->
+            <p:dialog id="leaveTypeDialog"
+                      header="Add Leave Type"
+                      widgetVar="leaveTypeDialogWidget"
+                      modal="true"
+                      resizable="false"
+                      width="460"
+                      styleClass="hrms-dialog">
+
+                <div class="dialog-body">
+
+                    <div class="form-field" style="margin-bottom:16px;">
+                        <label>Leave Type Name <span class="required">*</span></label>
+                        <p:inputText value="#{leaveTypeBean.name}"
+                                     styleClass="p-inputtext form-control"
+                                     placeholder="e.g. Casual, Sick, Earned" />
+                    </div>
+
+                    <div class="form-field" style="margin-bottom:16px;">
+                        <label>Description</label>
+                        <p:inputTextarea value="#{leaveTypeBean.description}"
+                                         styleClass="p-inputtext form-control"
+                                         placeholder="Optional description..."
+                                         rows="3"
+                                         autoResize="false" />
+                    </div>
+
+                    <div class="form-field" style="margin-bottom:20px;">
+                        <label>Max Days Per Year <span class="required">*</span></label>
+                        <p:inputNumber value="#{leaveTypeBean.maxDaysPerYear}"
+                                       styleClass="form-control"
+                                       minValue="1"
+                                       decimalPlaces="0" />
+                    </div>
+
+                    <div style="display:flex; gap:10px; justify-content:flex-end;">
+                        <p:commandButton value="Save"
+                                         icon="pi pi-check"
+                                         styleClass="p-button-sm"
+                                         action="#{leaveTypeBean.save}"
+                                         update="leaveTypeForm"
+                                         process="leaveTypeDialog"
+                                         oncomplete="if(!args.validationFailed) PF('leaveTypeDialogWidget').hide()" />
+                        <p:commandButton value="Cancel"
+                                         icon="pi pi-times"
+                                         styleClass="p-button-sm p-button-outlined"
+                                         onclick="PF('leaveTypeDialogWidget').hide()"
+                                         type="button" />
+                    </div>
+
+                </div>
+
+            </p:dialog>
+
+        </h:form>
+
+    </ui:define>
+
+</ui:composition>
+</html>

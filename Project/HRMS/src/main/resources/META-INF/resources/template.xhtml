@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="primefaces"
+      xmlns:ui="jakarta.faces.facelets">
+
+<h:head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HRMS - <ui:insert name="pageTitle">Dashboard</ui:insert></title>
+	<link rel="icon" type="image/x-icon" href="#{request.contextPath}/favicon.ico" />
+    <h:outputStylesheet name="css/layout.css" />
+</h:head>
+
+<h:body styleClass="hrms-body">
+
+    <div class="hrms-sidebar">
+		<div class="sidebar-logo">
+		    <span class="logo-icon pi pi-users" />
+		    <span class="logo-text">#{sessionBean.companyName}</span>
+		</div>
+
+        <ul class="sidebar-nav">
+            <!-- HR_ADMIN and HR_MANAGER see all management links -->
+            <h:panelGroup rendered="#{sessionBean.hrAdmin or sessionBean.hrManager}">
+                <li class="nav-item #{request.requestURI.contains('index') ? 'active' : ''}">
+                    <h:link outcome="/index" styleClass="nav-link">
+                        <span class="pi pi-home nav-icon" />
+                        <span>Dashboard</span>
+                    </h:link>
+                </li>
+                <li class="nav-item #{request.requestURI.contains('employee') ? 'active' : ''}">
+                    <h:link outcome="/employee/list" styleClass="nav-link">
+                        <span class="pi pi-id-card nav-icon" />
+                        <span>Employees</span>
+                    </h:link>
+                </li>
+                <li class="nav-item #{request.requestURI.contains('department') ? 'active' : ''}">
+                    <h:link outcome="/department/list" styleClass="nav-link">
+                        <span class="pi pi-sitemap nav-icon" />
+                        <span>Departments</span>
+                    </h:link>
+                </li>
+                <li class="nav-item #{request.requestURI.contains('leave') ? 'active' : ''}">
+                    <h:link outcome="/leave/list" styleClass="nav-link">
+                        <span class="pi pi-calendar nav-icon" />
+                        <span>Leave</span>
+                    </h:link>
+                </li>
+				<li class="nav-item #{request.requestURI.contains('leave/types') ? 'active' : ''}">
+				    <h:link outcome="/leave/types" styleClass="nav-link">
+				        <span class="pi pi-tags nav-icon" />
+				        <span>Leave Types</span>
+				    </h:link>
+				</li>
+                <li class="nav-item #{request.requestURI.contains('attendance') ? 'active' : ''}">
+                    <h:link outcome="/attendance/list" styleClass="nav-link">
+                        <span class="pi pi-clock nav-icon" />
+                        <span>Attendance</span>
+                    </h:link>
+                </li>
+                <li class="nav-item #{request.requestURI.contains('payroll') ? 'active' : ''}">
+                    <h:link outcome="/payroll/list" styleClass="nav-link">
+                        <span class="pi pi-wallet nav-icon" />
+                        <span>Payroll</span>
+                    </h:link>
+                </li>
+				<li class="nav-item #{request.requestURI.contains('reports') ? 'active' : ''}">
+				    <h:link outcome="/reports/list" styleClass="nav-link">
+				        <span class="pi pi-chart-bar nav-icon" />
+				        <span>Reports</span>
+				    </h:link>
+				</li>
+            </h:panelGroup>
+
+            <!-- EMPLOYEE sees only personal links -->
+            <h:panelGroup rendered="#{sessionBean.employee}">
+                <li class="nav-item #{request.requestURI.contains('my-dashboard') ? 'active' : ''}">
+                    <h:link outcome="/employee/my-dashboard" styleClass="nav-link">
+                        <span class="pi pi-home nav-icon" />
+                        <span>My Dashboard</span>
+                    </h:link>
+                </li>
+                <li class="nav-item #{request.requestURI.contains('my-leave') ? 'active' : ''}">
+                    <h:link outcome="/leave/my-leave" styleClass="nav-link">
+                        <span class="pi pi-calendar nav-icon" />
+                        <span>My Leave</span>
+                    </h:link>
+                </li>
+                <li class="nav-item #{request.requestURI.contains('my-attendance') ? 'active' : ''}">
+                    <h:link outcome="/attendance/my-attendance" styleClass="nav-link">
+                        <span class="pi pi-clock nav-icon" />
+                        <span>My Attendance</span>
+                    </h:link>
+                </li>
+                <li class="nav-item #{request.requestURI.contains('my-payroll') ? 'active' : ''}">
+                    <h:link outcome="/payroll/my-payroll" styleClass="nav-link">
+                        <span class="pi pi-wallet nav-icon" />
+                        <span>My Payroll</span>
+                    </h:link>
+                </li>
+            </h:panelGroup>
+
+            <!-- SUPER_ADMIN sees company management -->
+            <h:panelGroup rendered="#{sessionBean.superAdmin}">
+                <li class="nav-item #{request.requestURI.contains('companies') ? 'active' : ''}">
+                    <h:link outcome="/superadmin/companies" styleClass="nav-link">
+                        <span class="pi pi-building nav-icon" />
+                        <span>Companies</span>
+                    </h:link>
+                </li>
+            </h:panelGroup>
+        </ul>
+    </div>
+
+    <!-- Main area -->
+    <div class="hrms-main">
+
+        <!-- Topbar -->
+        <div class="hrms-topbar">
+            <div class="topbar-left">
+                <span class="page-title"><ui:insert name="pageTitle">Dashboard</ui:insert></span>
+            </div>
+            <div class="topbar-right">
+                <span class="pi pi-bell topbar-icon" title="Notifications" />
+                <span class="topbar-user">
+                    <span class="pi pi-user" />
+                    <span>#{sessionBean.displayName}</span>
+                </span>
+                <h:form>
+                    <p:commandButton value="Logout" icon="pi pi-sign-out" styleClass="logout-btn" action="#{sessionBean.logout}" ajax="false" />
+                </h:form>
+            </div>
+        </div>
+
+        <!-- Page content -->
+        <div class="hrms-content">
+            <ui:insert name="content">
+                <p>No content defined.</p>
+            </ui:insert>
+        </div>
+
+    </div>
+
+</h:body>
+</html>
